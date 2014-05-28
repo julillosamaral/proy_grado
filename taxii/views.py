@@ -4,6 +4,9 @@ from taxii.decorators import taxii_auth_check
 import taxii.handlers as handlers
 from taxii.utils import make_safe
 import libtaxii.messages_11 as tm
+import StringIO
+from lxml import etree
+
 
     
 @csrf_exempt
@@ -40,7 +43,7 @@ def poll_service(request):
     """Handles TAXII Poll Service requests."""
     logger = logging.getLogger("TAXIIApplication.taxii.views.poll_service")
     logger.debug('Entering poll service')
-    
+
     resp = handlers.validate_taxii_request(request)
     if resp: return resp # if validation failed, return the response
     

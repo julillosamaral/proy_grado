@@ -7,39 +7,32 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 #sys.path.insert(0, os.path.dirname(__file__))
 
 # calculated paths for django and the site
-#DJANGO_ROOT = os.path.dirname(os.path.realpath(django.__file__))
+DJANGO_ROOT = os.path.dirname(os.path.realpath(django.__file__))
 SITE_ROOT   = os.path.dirname(os.path.realpath(__file__))
 
 AUTH_REQUIRED = False # possible location for global configuration flag
-DEBUG = True # If set to True, YETI will not return TAXII Messages for internal server errors.
+DEBUG = True # If set to True, TAXII will not return TAXII Messages for internal server errors.
 TEMPLATE_DEBUG = True
 #APPEND_SLASH = True
 #TEMP_DIR = os.path.join(SITE_ROOT, "tmp")
 
 
-### YETI Specific Configs ###
+### TAXII APP Specific Configs ###
 #CERT_EXPORT_LOCATION = os.path.join(SITE_ROOT, 'client_certs/all_certs.cer') # The file Apache uses to validate users
-
-#ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
-#)
 
 #MANAGERS = ADMINS
 
-#DB_PATH = os.path.join(os.path.dirname(SITE_ROOT), 'sqlite3.db') # one directory up from the SITE_ROOT
-
-# YETI is configured to use SQLLite by default. To change
-# the database used by YETI, see the Django documentation on 
+# TAXII is configured to use SQLLite by default. To change
+# the database used by TAXII, see the Django documentation on 
 # databases: https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE':   'django.db.backends.mysql',
         'NAME':     'taxii_db',
-        # The following settings are not used with sqlite3:
         'USER': 'stix',
         'PASSWORD': 'stix',
-        'HOST': '192.168.103.190',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
-        'PORT': '3306',                      # Set to empty string for default.
+        'HOST': '192.168.103.190',
+        'PORT': '3306',
     }
 }
 

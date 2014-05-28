@@ -253,10 +253,10 @@ def poll_get_content(request, taxii_message):
     """Returns a Poll response for a given Poll Request Message"""
     logger = logging.getLogger('taxii.utils.handlers.poll_get_content')
     logger.debug('Polling data from data feed [%s] - begin_ts: %s, end_ts: %s', 
-                 make_safe(taxii_message.feed_name), taxii_message.exclusive_begin_timestamp_label, taxii_message.inclusive_end_timestamp_label)
-    
+                taxii_message.exclusive_begin_timestamp_label, taxii_message.inclusive_end_timestamp_label)
+    taxii_message.feed_name = 'default'
     try:
-        data_feed = DataFeed.objects.get(name=taxii_message.feed_name)
+        data_feed = DataFeed.objects.get(name='default')
     except:
         logger.debug('Attempting to poll unknown data feed [%s]', make_safe(taxii_message.feed_name))
         m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_NOT_FOUND, message='Data feed does not exist [%s]' % (make_safe(taxii_message.feed_name)))
@@ -273,8 +273,8 @@ def poll_get_content(request, taxii_message):
     else:
         query_params['timestamp_label__lte'] = current_datetime
     
-    if taxii_message.content_bindings:
-        query_params['content_binding__in'] = taxii_message.content_bindings
+ #   if taxii_message.content_bindings:
+  #         query_params['content_binding__in'] = taxii_message.content_bindings
     
     content_blocks = data_feed.content_blocks.filter(**query_params).order_by('timestamp_label')
     logger.debug('Returned [%d] content blocks from data feed [%s]', len(content_blocks), make_safe(data_feed.name))

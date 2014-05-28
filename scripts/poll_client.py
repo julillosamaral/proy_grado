@@ -5,7 +5,7 @@ import argparse
 import dateutil.parser
 
 import libtaxii as t
-import libtaxii.messages as tm
+import libtaxii.messages_11 as tm11
 import libtaxii.clients as tc
 
 
@@ -17,6 +17,7 @@ def main():
     parser.add_argument("--feed", dest="feed", default="default", help="Data Feed to poll. Defaults to 'default'.")
     parser.add_argument("--begin_timestamp", dest="begin_ts", default=None, help="The begin timestamp (format: YYYY-MM-DDTHH:MM:SS.ssssss+/-hh:mm) for the poll request. Defaults to None.")
     parser.add_argument("--end_timestamp", dest="end_ts", default=None, help="The end timestamp (format: YYYY-MM-DDTHH:MM:SS.ssssss+/-hh:mm) for the poll request. Defaults to None.")
+    parser.add_argument("--content-binding", dest="content_binding", default= t.CB_STIX_XML_10, help="Content binding of the Content Block to send. Defaults to %s" % t.CB_STIX_XML_10 )
 
     args = parser.parse_args()
 
@@ -38,15 +39,15 @@ def main():
         print "Unable to parse timestamp value. Timestamp should include both date and time information along with a timezone or UTC offset (e.g., YYYY-MM-DDTHH:MM:SS.ssssss+/-hh:mm). Aborting poll."
         sys.exit()
 
-    poll_req = tm.PollRequest(message_id=tm.generate_message_id(),
-                              feed_name=args.feed,
-                              exclusive_begin_timestamp_label=begin_ts,
-                              inclusive_end_timestamp_label=end_ts)
-
+    poll_req = tm11.PollRequest(message_id=tm11.generate_message_id(),
+                                 collection_name = args.feed,
+                                  exclusive_begin_timestamp_label=begin_ts,
+                                  inclusive_end_timestamp_label=end_ts,
+                                  subscription_id='1')
+    
     poll_req_xml = poll_req.to_xml()
     print "Poll Request: \r\n", poll_req_xml
     client = tc.HttpClient()
-    client.setProxy('noproxy')
     resp = client.callTaxiiService2(args.host, args.path, t.VID_TAXII_XML_10, poll_req_xml, args.port)
     response_message = t.get_message_from_http_response(resp, '0')
     print "Response Message: \r\n", response_message.to_xml()
