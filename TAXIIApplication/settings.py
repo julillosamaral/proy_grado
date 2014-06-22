@@ -23,7 +23,7 @@ TEMPLATE_DEBUG = True
 #MANAGERS = ADMINS
 
 # TAXII is configured to use SQLLite by default. To change
-# the database used by TAXII, see the Django documentation on 
+# the database used by TAXII, see the Django documentation on
 # databases: https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
     'default': {
@@ -31,7 +31,8 @@ DATABASES = {
         'NAME':     'taxii_db',
         'USER': 'stix',
         'PASSWORD': 'stix',
-        'HOST': '192.168.103.190',
+       # 'HOST': '192.168.2.17',  #'192.168.0.103',
+        'HOST': '192.168.0.103',
         'PORT': '3306',
     }
 }
@@ -115,7 +116,20 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'TAXIIApplication',
     'taxii',
+    'rest_framework',
+    'rest',
+    'djcelery',
+    'kombu.transport.django',
 )
+
+import djcelery
+djcelery.setup_loader()
+BROKER_URL = "django://"
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAdminUser',),
+    'PAGINATE_BY': 10
+}
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -159,7 +173,7 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        
+
     },
     'loggers': {
         'TAXIIApplication': {
@@ -168,6 +182,11 @@ LOGGING = {
             'propagate': True,
         },
         'taxii': {
+            'handlers': ['normal','stdout'],
+            'level': LOG_LEVEL,
+            'propagate': True,
+        },
+        'rest': {
             'handlers': ['normal','stdout'],
             'level': LOG_LEVEL,
             'propagate': True,
@@ -183,7 +202,7 @@ LOGGING = {
 
 # Set the taxii authentication required flag to AUTH_REQUIRED
 # This is done after the settings_local import in case local settings
-# override the AUTH_FLAG declared above. We do this to keep the 
+# override the AUTH_FLAG declared above. We do this to keep the
 #import taxii.settings
 #taxii.settings.AUTH_REQUIRED = AUTH_REQUIRED
 

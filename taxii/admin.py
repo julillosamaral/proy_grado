@@ -5,16 +5,16 @@ from taxii.forms import DataFeedModelForm, InboxModelForm
 class DataFeedAdmin(admin.ModelAdmin):
     form = DataFeedModelForm
     list_display = ['name', 'description']
-    
+
 class InboxAdmin(admin.ModelAdmin):
-    form = InboxModelForm    
-    
+    form = InboxModelForm
+
 class ProtocolBindingIdAdmin(admin.ModelAdmin):
     list_display = ['title', 'description', 'id', 'binding_id', 'date_created', 'date_updated']
 
 class MessageBindingIdAdmin(admin.ModelAdmin):
     list_display = ['title', 'description', 'id', 'binding_id', 'date_created', 'date_updated']
-    
+
 class ContentBindingIdAdmin(admin.ModelAdmin):
     list_display = ['title', 'description', 'id', 'binding_id', 'date_created', 'date_updated']
 

@@ -5,3 +5,4 @@ urlpatterns = patterns('',
     url(r'^poll/$', 'taxii.views.poll_service'),
     url(r'^discovery/$', 'taxii.views.discovery_service'),
 )
+

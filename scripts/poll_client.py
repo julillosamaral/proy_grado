@@ -51,6 +51,12 @@ def main():
     resp = client.callTaxiiService2(args.host, args.path, t.VID_TAXII_XML_10, poll_req_xml, args.port)
     response_message = t.get_message_from_http_response(resp, '0')
     print "Response Message: \r\n", response_message.to_xml()
+    
+    message = tm11.get_message_from_xml(response_message.to_xml())
+    
+    
+    
+    response_message.
 
 if __name__ == "__main__":
     main()

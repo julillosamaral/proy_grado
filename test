@@ -1,0 +1,19 @@
+<ns0:STIX_Package xmlns:ns0="http://stix.mitre.org/stix-1" xmlns:ns2="http://stix.mitre.org/Indicator-2" xmlns:ns3="http://cybox.mitre.org/cybox-2" xmlns:ns4="http://cybox.mitre.org/objects#AddressObject-2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="example:Package-c05fdc30-ad40-11e3-a7cb-a820663f3c36" version="1.1" xsi:schemaLocation="     http://cybox.mitre.org/common-2 http://cybox.mitre.org/XMLSchema/common/2.1/cybox_common.xsd     http://cybox.mitre.org/cybox-2 http://cybox.mitre.org/XMLSchema/core/2.1/cybox_core.xsd     http://cybox.mitre.org/default_vocabularies-2 http://cybox.mitre.org/XMLSchema/default_vocabularies/2.1/cybox_default_vocabularies.xsd     http://cybox.mitre.org/objects#FileObject-2 http://cybox.mitre.org/XMLSchema/objects/File/2.1/File_Object.xsd     http://stix.mitre.org/Indicator-2 http://stix.mitre.org/XMLSchema/indicator/2.1/indicator.xsd     http://stix.mitre.org/common-1 http://stix.mitre.org/XMLSchema/common/1.1/stix_common.xsd     http://stix.mitre.org/stix-1 http://stix.mitre.org/XMLSchema/core/1.1/stix_core.xsd">
+    <ns0:STIX_Header>
+    <ns0:Title>Example watchlist that contains IP information.</ns0:Title>
+    <ns0:Package_Intent xsi:type="stixVocabs:PackageIntentVocab-1.0">Indicators - Watchlist</ns0:Package_Intent>
+        </ns0:STIX_Header>
+        <ns0:Indicators>
+            <ns0:Indicator id="example:Indicator-33fe3b22-0201-47cf-85d0-97c02164528d" xsi:type="indicator:IndicatorType">
+                <ns2:Type xsi:type="stixVocabs:IndicatorTypeVocab-1.0">IP Watchlist</ns2:Type>
+                <ns2:Description>Sample IP Address Indicator for this watchlist. This contains one indicator with a set of three IP addresses in the watchlist.</ns2:Description>
+                <ns2:Observable id="example:Observable-1c798262-a4cd-434d-a958-884d6980c459">
+                    <ns3:Object id="example:Object-1980ce43-8e03-490b-863a-ea404d12242e">
+                        <ns3:Properties category="ipv4-addr" xsi:type="AddressObject:AddressObjectType">
+                            <ns4:Address_Value apply_condition="ANY" condition="Equals">10.0.0.0,10.0.0.1,10.0.0.2</ns4:Address_Value>
+                        </ns3:Properties>
+                    </ns3:Object>
+                </ns2:Observable>
+            </ns0:Indicator>
+        </ns0:Indicators>
+</ns0:STIX_Package>

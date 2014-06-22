@@ -201,24 +201,7 @@ def inbox_add_content(request, inbox_name, taxii_message):
             c.message_id = taxii_message.message_id
             c.content_binding = content_binding_id
             c.content = content_block.content
-            
-            #Creo el objeto taxii a partir del xml stix
-            logger.debug(content_block.content)
-            
-            from xml.etree import ElementTree as ET
-            tree = ET.XML(c.content)
-
-            with open("test", "w") as f:
-                f.write(ET.tostring(tree))
-                f.close()
-                
-            fi = "test"
-            
-            stix_package = STIXPackage.from_xml(fi)
-            stix_dict = stix_package.to_dict() # parse to dictionary
-
-            stix_package = STIXPackage.from_dict(stix_dict) # create python-stix object from dictionary
-            
+             
             if content_block.padding: 
                 c.padding = content_block.padding
             
@@ -237,15 +220,7 @@ def inbox_add_content(request, inbox_name, taxii_message):
                                  'associated data feed [%s] does not support this binding.',
                                  make_safe(inbox_name), make_safe(content_block.content_binding), make_safe(data_feed.name))
     
-    inbox.save()
-    try :
-        ticket_id = create_RTIR_ticket(stix_package)
-        cbr = ContentBlockRTIR()
-        cbr.rtir_id = ticket_id
-        cbr.content_block = c
-        cbr.save()
-    except Exception as e:
-        print e  
+    inbox.save()  
     m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type = tm.ST_SUCCESS)
     return create_taxii_response(m, use_https=request.is_secure())
 
