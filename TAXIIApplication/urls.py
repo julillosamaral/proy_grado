@@ -22,7 +22,8 @@ router.register(r'dataFeed', views.DataFeedViewSet)
 router.register(r'dataFeedSubscription', views.DataFeedSubscriptionViewSet)
 router.register(r'inbox', views.InboxViewSet)
 router.register(r'contentBlockRTIR', views.ContentBlockRTIRViewSet)
-
+router.register(r'serverServices', views.ServerServicesViewSet)
+router.register(r'services', views.ServicesViewSet)
 
 #urlpatterns = router.urls
 

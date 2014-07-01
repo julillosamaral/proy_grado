@@ -143,7 +143,7 @@ class DataFeedSubscriptionMethod(models.Model):
 
     def __unicode__(self):
         if self.title:
-            return u'%s' % (self.title)
+            return '%s %s' % (self.id, self.title)
         else:
             return u'%s | %s' % (self.protocol_binding, self.message_binding)
 
@@ -247,4 +247,16 @@ class ContentBlockRTIR(models.Model):
     """Represents the nexus between the RTIR ticket and the content block."""
     rtir_id = models.IntegerField(unique=True)
     content_block = models.ForeignKey(ContentBlock)
+
+class Services(models.Model):
+    name = models.CharField(max_length=MAX_TITLE_LEN, unique=True)
+    service_type = models.CharField(max_length=MAX_TITLE_LEN)
+    service_ext = models.CharField(max_length=MAX_TITLE_LEN)
+
+class ServerServices(models.Model):
+    address = models.URLField()
+    services = models.ManyToManyField(Services)
+    description = models.TextField(blank=True)
+    name = models.CharField(max_length=MAX_TITLE_LEN, unique=True)
+
 

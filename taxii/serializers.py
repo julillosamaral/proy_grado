@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
-from taxii.models import Inbox, DataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR
+from taxii.models import Inbox, DataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR, Services, ServerServices
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -20,7 +20,7 @@ class ProtocolBindingIdSerializer(serializers.HyperlinkedModelSerializer):
 class ContentBindingIdSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ContentBindingId
-        fields = ('title', 'description', 'binding_id', 'date_created', 'date_updated')
+        fields = ('id', 'title', 'description', 'binding_id', 'date_created', 'date_updated')
 
 class MessageBindingIdSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -35,10 +35,10 @@ class DataFeedPushMethodSerializer(serializers.HyperlinkedModelSerializer):
 class DataFeedPollInformationSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = DataFeedPollInformation
-        fields = ('title', 'description', 'address', 'protocol_binding', 'message_bindings', 'date_created', 'date_updated')
+        fields = ('id', 'title', 'description', 'address', 'protocol_binding', 'message_bindings', 'date_created', 'date_updated')
 
 class DataFeedSubscriptionMethodSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
+  class Meta:
         model = DataFeedSubscriptionMethod
         fields = ('title', 'description', 'address', 'protocol_binding', 'message_bindings', 'date_created', 'date_updated')
 
@@ -48,9 +48,10 @@ class ContentBlockSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'title', 'description', 'timestamp_label', 'submitted_by', 'message_id', 'content_binding', 'content', 'padding', 'date_created', 'date_updated')
 
 class DataFeedSerializer(serializers.HyperlinkedModelSerializer):
+    subscription_methods = serializers.RelatedField(many=True)
     class Meta:
         model = DataFeed
-        fields = ('name', 'description', 'users', 'supported_content_bindings', 'push_methods', 'poll_service_instances', 'subscription_methods', 'content_blocks', 'date_created', 'date_updated')
+        fields = ('id', 'name', 'description', 'users', 'supported_content_bindings', 'push_methods', 'poll_service_instances', 'subscription_methods', 'content_blocks', 'date_created', 'date_updated')
 
 class DataFeedSubscriptionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -66,4 +67,16 @@ class ContentBlockRTIRSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ContentBlockRTIR
         fields = ('rtir_id', 'content_block')
+
+
+class ServicesSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Services
+        fields = ('id', 'name', 'service_type', 'service_ext')
+
+class ServerServicesSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = ServerServices
+        fields = ('id', 'address', 'services', 'description', 'name')
+
 
