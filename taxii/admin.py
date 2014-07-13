@@ -1,12 +1,19 @@
 from django.contrib import admin
-from taxii.models import Inbox, DataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, DataFeedSubscriptionMethod
+from taxii.models import Inbox, RemoteInbox, DataFeed, RemoteDataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, RemoteDataFeedPollInformation, DataFeedSubscriptionMethod
 from taxii.forms import DataFeedModelForm, InboxModelForm
 
 class DataFeedAdmin(admin.ModelAdmin):
     form = DataFeedModelForm
     list_display = ['name', 'description']
 
+class RemoteDataFeedAdmin(admin.ModelAdmin):
+    form = DataFeedModelForm
+    list_display = ['name', 'description']
+
 class InboxAdmin(admin.ModelAdmin):
+    form = InboxModelForm
+
+class RemoteInboxAdmin(admin.ModelAdmin):
     form = InboxModelForm
 
 class ProtocolBindingIdAdmin(admin.ModelAdmin):
@@ -30,3 +37,6 @@ admin.site.register(ProtocolBindingId, ProtocolBindingIdAdmin)
 admin.site.register(DataFeedPushMethod)
 admin.site.register(DataFeedPollInformation)
 admin.site.register(DataFeedSubscriptionMethod)
+admin.site.register(RemoteDataFeed)
+admin.site.register(RemoteDataFeedPollInformation)
+admin.site.register(RemoteInbox)

@@ -1,10 +1,10 @@
 from django.shortcuts import render
 import logging
 import StringIO
-from taxii.models import Inbox, DataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR, ServerServices, Services
+from taxii.models import Inbox, RemoteInbox, DataFeed, RemoteDataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation,RemoteDataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR
 from rest_framework.response import Response
 from rest_framework import viewsets
-from taxii.serializers import UserSerializer, GroupSerializer, InboxSerializer, DataFeedSerializer, MessageBindingIdSerializer, ContentBindingIdSerializer, ContentBlockSerializer, ProtocolBindingIdSerializer, DataFeedPushMethodSerializer, DataFeedPollInformationSerializer, DataFeedSubscriptionMethodSerializer, DataFeedSubscriptionSerializer, ContentBlockRTIRSerializer, ServerServicesSerializer, ServicesSerializer
+from taxii.serializers import UserSerializer, GroupSerializer, InboxSerializer, RemoteInboxSerializer, DataFeedSerializer, RemoteDataFeedSerializer, MessageBindingIdSerializer, ContentBindingIdSerializer, ContentBlockSerializer, ProtocolBindingIdSerializer, DataFeedPushMethodSerializer, DataFeedPollInformationSerializer, RemoteDataFeedPollInformationSerializer, DataFeedSubscriptionMethodSerializer, DataFeedSubscriptionSerializer, ContentBlockRTIRSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -37,6 +37,10 @@ class DataFeedPollInformationViewSet(viewsets.ModelViewSet):
     queryset = DataFeedPollInformation.objects.all()
     serializer_class = DataFeedPollInformationSerializer
 
+class RemoteDataFeedPollInformationViewSet(viewsets.ModelViewSet):
+    queryset = RemoteDataFeedPollInformation.objects.all()
+    serializer_class = RemoteDataFeedPollInformationSerializer
+
 class DataFeedSubscriptionMethodViewSet(viewsets.ModelViewSet):
     queryset = DataFeedSubscriptionMethod.objects.all()
     serializer_class = DataFeedSubscriptionMethodSerializer
@@ -49,6 +53,10 @@ class DataFeedViewSet(viewsets.ModelViewSet):
     queryset = DataFeed.objects.all()
     serializer_class = DataFeedSerializer
 
+class RemoteDataFeedViewSet(viewsets.ModelViewSet):
+    queryset = RemoteDataFeed.objects.all()
+    serializer_class = RemoteDataFeedSerializer
+
 class DataFeedSubscriptionViewSet(viewsets.ModelViewSet):
     queryset = DataFeedSubscription.objects.all()
     serializer_class = DataFeedSubscriptionSerializer
@@ -57,17 +65,13 @@ class InboxViewSet(viewsets.ModelViewSet):
     queryset = Inbox.objects.all()
     serializer_class = InboxSerializer
 
+class RemoteInboxViewSet(viewsets.ModelViewSet):
+    queryset = RemoteInbox.objects.all()
+    serializer_class = RemoteInboxSerializer
+
 class ContentBlockRTIRViewSet(viewsets.ModelViewSet):
     queryset = ContentBlockRTIR.objects.all()
     serializer_class = ContentBlockRTIRSerializer
-
-class ServerServicesViewSet(viewsets.ModelViewSet):
-    queryset = ServerServices.objects.all()
-    serializer_class = ServerServicesSerializer
-
-class ServicesViewSet(viewsets.ModelViewSet):
-    queryset = Services.objects.all()
-    serializer_class = ServicesSerializer
 
 @api_view(['GET', 'POST'])
 def alta_informacion(request):
@@ -107,27 +111,39 @@ def alta_informacion(request):
 #def subscripcion_data_feed(request):
 
 @api_view(['POST'])
+def obtener_data_feeds(request):
+    logger = logging.getLogger('TAXIIApplication.taxii.views.obtener_data_feeds')
+    logger.debug('Se comienza la obtencion de data feeds')
+
+    url = request.DATA.get('url')
+    urlParsed = urlparse(url)
+
+    obtener_data_feeds.delay(urlParsed.hostname, urlParsed.port, urlParsed.path)
+
+@api_view(['POST'])
 def envio_informacion(request):
     logger = logging.getLogger('TAXIIApplication.taxii.views.envio_informacion')
     logger.debug('Se comienza el envio de informacion')
-    envio_informacion.delay(data_feed_id = request.data_feed_id)
+    inbox_id = request.DATA.get('id')
+
+    inbox_service = RemoteInbox.objects.get(id = inbox_id)
+
+    urlParsed = urlparse(inbox_service.address)
+    envio_informacion.delay(data_feed = inbox_service.data_feed, host = urlparse.hostname, path = urlParsed.path, port = urlParsed.port)
 
 @api_view(['POST'])
 def poll_informacion(request):
-
     logger = logging.getLogger('TAXIIApplication.taxii.views.poll_informacion')
     logger.debug('Se comienza el poll de informacion')
     logger.debug('Los datos que llegan al request son: ')
     logger.debug(request.DATA)
 
-    selected_item = request.DATA.get('id_data_feed').split('-')
-    data_feed = DataFeed.objects.get(id = selected_item[0])
+    selected_item = request.DATA.get('id')
+    data_feed = RemoteDataFeed.objects.get(id = selected_item)
     logger.debug('El data feed obtenido es:' + data_feed.name)
 
-    subscription_method =  DataFeedSubscriptionMethod.objects.get(id = selected_item[1])
-    logger.debug('El subscription method es: ' + subscription_method.title)
-
-    urlParsed = urlparse(subscription_method.address)
+    data_feed_poll_info = data_feed.poll_service_instance
+    urlParsed = urlparse(data_feed_poll_info.address)
 
     logger.debug('Los datos de conexion son: ' + urlParsed.hostname + ' ' + str(urlParsed.port) + ' ' + urlParsed.path)
     poll_request.delay(collection_name = data_feed.name, subscription_id = '1', host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)

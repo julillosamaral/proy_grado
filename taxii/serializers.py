@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
-from taxii.models import Inbox, DataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR, Services, ServerServices
+from taxii.models import Inbox, RemoteInbox, DataFeed, RemoteDataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, RemoteDataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -68,15 +68,19 @@ class ContentBlockRTIRSerializer(serializers.HyperlinkedModelSerializer):
         model = ContentBlockRTIR
         fields = ('rtir_id', 'content_block')
 
-
-class ServicesSerializer(serializers.HyperlinkedModelSerializer):
+class RemoteDataFeedPollInformationSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = Services
-        fields = ('id', 'name', 'service_type', 'service_ext')
+        model = RemoteDataFeedPollInformation
+        fields = ('id', 'title', 'description', 'address', 'protocol_binding', 'message_bindings', 'date_created', 'date_updated')
 
-class ServerServicesSerializer(serializers.HyperlinkedModelSerializer):
+class RemoteDataFeedSerializer(serializers.HyperlinkedModelSerializer):
+    subscription_methods = serializers.RelatedField(many=True)
     class Meta:
-        model = ServerServices
-        fields = ('id', 'address', 'services', 'description', 'name')
+        model = RemoteDataFeed
+        fields = ('id', 'name', 'description', 'supported_content_bindings', 'push_methods', 'poll_service_instance', 'subscription_methods', 'content_blocks', 'date_created', 'date_updated')
 
+class RemoteInboxSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = RemoteInbox
+        fields = ('name', 'description', 'supported_content_bindings', 'supported_message_bindings', 'content_blocks', 'supported_protocol_binding', 'remote_data_feeds', 'date_created', 'date_updated')
 

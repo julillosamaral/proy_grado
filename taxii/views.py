@@ -4,13 +4,14 @@ from taxii.decorators import taxii_auth_check
 import taxii.handlers as handlers
 from taxii.utils import make_safe
 import libtaxii.messages_11 as tm
+import libtaxii.messages as tm_version
 import StringIO
 from lxml import etree
 from django.contrib.auth.models import User, Group
 from taxii.models import Inbox, DataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR
 from rest_framework.response import Response
 from rest_framework import viewsets
-from taxii.serializers import UserSerializer, GroupSerializer, InboxSerializer, DataFeedSerializer, MessageBindingIdSerializer, ContentBindingIdSerializer, ContentBlockSerializer, ProtocolBindingIdSerializer, DataFeedPushMethodSerializer, DataFeedPollInformationSerializer, DataFeedSubscriptionMethodSerializer, DataFeedSubscriptionSerializer, ContentBlockRTIRSerializer, ServerServicesSerializer, ServicesSerializer
+from taxii.serializers import UserSerializer, GroupSerializer, InboxSerializer, DataFeedSerializer, MessageBindingIdSerializer, ContentBindingIdSerializer, ContentBlockSerializer, ProtocolBindingIdSerializer, DataFeedPushMethodSerializer, DataFeedPollInformationSerializer, DataFeedSubscriptionMethodSerializer, DataFeedSubscriptionSerializer, ContentBlockRTIRSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -96,3 +97,33 @@ def discovery_service(request):
 
     resp = handlers.discovery_get_services(request, taxii_message)
     return resp
+
+
+
+@csrf_exempt
+@taxii_auth_check
+def feed_managment_service(request):
+    """Handles TAXII Feed Managment Service requests."""
+    logger = logging.getLogger("TAXIIApplication.taxii.views.feed_managment_service")
+    logger.debug('Entering feed managment service')
+
+    resp = handlers.validate_taxii_request(request)
+    if resp: return resp # if validation failed, return the response
+
+    try:
+        taxii_message = tm_version.get_message_from_xml(request.body)
+    except Exception as ex:
+        logger.debug('Unable to parse inbound message: %s', ex.message)
+        m = tm.StatusMessage(tm.generate_message_id(), '0', status_type=tm.ST_BAD_MESSAGE, message='Message received could not be parsed')
+        return handlers.create_taxii_response(m, use_https=request.is_secure())
+
+    logger.debug('Message received TAXII message with id [%s] and type [%s]', make_safe(taxii_message.message_id), make_safe(taxii_message.message_type))
+
+    if taxii_message.message_type != tm_version.MSG_FEED_INFORMATION_REQUEST:
+        logger.info('TAXII message with id [%s] was not Feed Managment request [%s]', make_safe(taxii_message.message_id), make_safe(taxii_message.message_type))
+        m = tm_version.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_FAILURE, message='Message sent to feed managment service did not have a feed_managmen_request message type')
+        return handlers.create_taxii_response(m, use_https=request.is_securesecure())
+
+    resp = handlers.feed_managment_get_content(request, taxii_message)
+    return resp
+

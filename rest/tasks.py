@@ -2,6 +2,7 @@ from celery.decorators import task
 import sys
 import libtaxii as t
 import libtaxii.messages_11 as tm11
+import libtaxii.messages as tm
 import libtaxii.clients as tc
 import logging
 from taxii.models import DataFeedSubscriptionMethod
@@ -63,21 +64,14 @@ def poll_request(collection_name, subscription_id, host, path, port):
             p.save()
 
 @task()
-def envio_informacion(data_feed_id):
+def envio_informacion(data_feed, host, path, port):
     logger = logging.getLogger('TAXIIApplication.rest.tasks.envio_informacion')
     logger.debug('Obtengo los subscription Methods')
-
-
     logger.debug('Los parametros recibidos son: ')
-    logger.debug('Data Feed Id: ' + str(data_feed_id))
     logger.debug('Host: ' + host)
     logger.debug('Path: ' + path)
     logger.debug('Port: ' + str(port))
-
-    logger.debug('Se busca el data feed con id' + str(data_feed_id))
-    data_feed =  DataFeed.objects.filter(pk = data_feed_id)
-
-    df_subscription_methods = data_feed.subscription_methods
+    logger.debug('El data feed es id y titulo' + str(data_feed.id) + data_feed.title)
 
     content_blocks = data_feed.content_blocks
 
@@ -90,13 +84,31 @@ def envio_informacion(data_feed_id):
     inbox_xml = inbox_message.to_xml()
     logger.debug('El mensaje a enviar es: '+ inbox_xml)
 
-    for df_sub_meth in df_subscription_methods:
-        logger.debug('Enviando mensaje a: ' + df_sub_meth.address)
-        o = urlparse(df_sub_meth.address)
-        client = tc.HttpClient()
-        client.setProxy('noproxy')
-        resp = client.callTaxiiService2(o.hostname, o.path, t.VID_TAXII_XML_10, inbox_xml, o.port)
-        response_message = t.get_message_from_http_response(resp, '0')
-        logger.debug('El mensaje de respuesta fue: ' + response_message)
-        #Con la respuesta creo que no hago nada. Queda loggeada nomas
+    client = tc.HttpClient()
+    client.setProxy('noproxy')
+
+    resp = client.callTaxiiService2(hostname, path, t.VID_TAXII_XML_10, inbox_xml, port)
+    response_message = t.get_message_from_http_response(resp, '0')
+    logger.debug('El mensaje de respuesta fue: ' + response_message)
+    #Con la respuesta creo que no hago nada. Queda loggeada nomas
+
+@task()
+def obtener_data_feeds(host, port, path):
+    logger = logging.getLogger('TAXIIApplication.rest.tasks.obtener_data_feeds')
+    logger.debug('Obtengo los data feeds en el servidor')
+    logger.debug('Host: ' + host)
+    logger.debug('Path: ' + path)
+    logger.debug('Port: ' + str(port))
+
+
+    feed_information = tm.FeedInformationRequest(message_id=tm.generate_message_id())
+    feed_info_xml = feed_information.to_xml()
+    logger.debug('Se envia el siguiente mensaje: ' + feed_info_xml)
+    client = tc.HttpClient()
+    resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_info_xml, port)
+
+    response_message = t.get_message_from_http_response(resp, '0')
+    logger.debug('Se obtiene la siguiente respuesta: '+response_message)
+
+
 

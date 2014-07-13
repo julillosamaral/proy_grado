@@ -16,14 +16,15 @@ router.register(r'contentBindingId', views.ContentBindingIdViewSet)
 router.register(r'messageBindingId', views.MessageBindingIdViewSet)
 router.register(r'dataFeedPushMethod', views.DataFeedPushMethodViewSet)
 router.register(r'dataFeedPollInformation', views.DataFeedPollInformationViewSet)
+router.register(r'remoteDataFeedPollInformation', views.RemoteDataFeedPollInformationViewSet)
 router.register(r'dataFeedSubscriptionMethod', views.DataFeedSubscriptionMethodViewSet)
 router.register(r'contentBlock', views.ContentBlockViewSet)
 router.register(r'dataFeed', views.DataFeedViewSet)
 router.register(r'dataFeedSubscription', views.DataFeedSubscriptionViewSet)
+router.register(r'remoteDataFeed', views.RemoteDataFeedViewSet)
 router.register(r'inbox', views.InboxViewSet)
+router.register(r'remoteInbox', views.RemoteInboxViewSet)
 router.register(r'contentBlockRTIR', views.ContentBlockRTIRViewSet)
-router.register(r'serverServices', views.ServerServicesViewSet)
-router.register(r'services', views.ServicesViewSet)
 
 #urlpatterns = router.urls
 

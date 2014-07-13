@@ -183,7 +183,7 @@ class DataFeed(models.Model):
     #authentication_required = models.BooleanField(default=True)
     supported_content_bindings = models.ManyToManyField(ContentBindingId)
     push_methods = models.ManyToManyField(DataFeedPushMethod)
-    poll_service_instances = models.ManyToManyField(DataFeedPollInformation)
+    poll_service_instances = models.ManyToubscription_methodsanyField(DataFeedPollInformation)
     subscription_methods = models.ManyToManyField(DataFeedSubscriptionMethod, blank=True, null=True)
     content_blocks = models.ManyToManyField(ContentBlock, blank=True, null=True)
 
@@ -248,15 +248,64 @@ class ContentBlockRTIR(models.Model):
     rtir_id = models.IntegerField(unique=True)
     content_block = models.ForeignKey(ContentBlock)
 
-class Services(models.Model):
-    name = models.CharField(max_length=MAX_TITLE_LEN, unique=True)
-    service_type = models.CharField(max_length=MAX_TITLE_LEN)
-    service_ext = models.CharField(max_length=MAX_TITLE_LEN)
-
-class ServerServices(models.Model):
-    address = models.URLField()
-    services = models.ManyToManyField(Services)
+class RemoteDataFeedPollInformation(models.Model):
+    title = models.CharField(max_length=MAX_TITLE_LEN, blank=True)
     description = models.TextField(blank=True)
-    name = models.CharField(max_length=MAX_TITLE_LEN, unique=True)
+    address = models.URLField()
+    protocol_binding = models.ForeignKey(ProtocolBindingId)
+    message_bindings = models.ManyToManyField(MessageBindingId)
+
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+
+    def __unicode__(self):
+        if self.title:
+            return u'%s' % (self.title)
+        else:
+            return u'%s | %s' % (self.protocol_binding, self.message_binding)
+
+    class Meta:
+        ordering = ['address']
+        verbose_name = "Remote Data Feed Poll Information"
+        verbose_name_plural = "Remote Data Feed Poll Information"
+
+
+class RemoteDataFeed(models.Model):
+    name = models.CharField(max_length=MAX_TITLE_LEN) # this will be used to access this data feed
+    description = models.TextField(blank=True)
+    supported_content_bindings = models.ManyToManyField(ContentBindingId)
+    push_methods = models.ManyToManyField(DataFeedPushMethod)
+    poll_service_instance = models.ForeignKey(RemoteDataFeedPollInformation, null=True)
+    subscription_methods = models.ManyToManyField(DataFeedSubscriptionMethod, blank=True, null=True)
+    content_blocks = models.ManyToManyField(ContentBlock, blank=True, null=True)
+
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+
+    def __unicode__(self):
+        return u'%s' % (self.name)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Remote Data Feed"
+
+class RemoteInbox(models.Model):
+    name = models.CharField(max_length=MAX_TITLE_LEN, unique=True) # this will become part of the URL where it can be accessed at
+    description = models.TextField(blank=True)
+    supported_content_bindings = models.ManyToManyField(ContentBindingId)
+    supported_message_bindings = models.ManyToManyField(MessageBindingId)
+    supported_protocol_binding = models.ForeignKey(ProtocolBindingId)
+    data_feed = models.ForeignKey(DataFeed, blank=True) # data received at an inbox will automatically be made available on these data feeds
+    address = models.URLField()
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+
+    def __unicode__(self):
+        return u'%s' % self.name
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Remote Inbox"
+        verbose_name_plural = "Remote Inboxes"
 
 
