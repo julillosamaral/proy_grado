@@ -2,6 +2,7 @@ import datetime
 from dateutil.tz import tzutc
 import logging
 
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 import rt
@@ -10,10 +11,10 @@ from stix.core import STIXPackage
 import libtaxii as t
 import libtaxii.messages as tm
 from taxii.models import Inbox, DataFeed, ContentBlock, ContentBindingId, \
-    ContentBlockRTIR
+    ContentBlockRTIR, MessageBindingId, ProtocolBindingId, DataFeedSubscriptionMethod, DataFeedSubscription
 import taxii.settings as s
 from taxii.utils import make_safe
-
+from django.utils import timezone
 
 # A set of headers that are utilized by TAXII. These are formatted as Django's
 # HttpRequest.META keys: https://docs.djangoproject.com/en/dev/ref/request-response/#django.http.HttpRequest.REQUEST
@@ -271,8 +272,6 @@ def feed_managment_get_content(request, taxii_message):
             sup_cont_bind = supported_content_binding.title
             supported_content_bindings.append(sup_cont_bind)
 
-
-
         feed = tm.FeedInformationResponse.FeedInformation(feed_name = data_feed.name,
                                                         feed_description = data_feed.description,
                                                         supported_contents=supported_content_bindings,
@@ -287,6 +286,98 @@ def feed_managment_get_content(request, taxii_message):
                                                                 feed_informations=feed_information_list)
 
     return create_taxii_response(feed_managment_response_message, use_https=request.is_secure())
+
+
+def feed_subscription_get_content(request, taxii_message):
+    """Returns a feed subscription response for a given subscription feed  Message"""
+    logger = logging.getLogger('taxii.utils.handlers.feed_subscription_get_content')
+    logger.debug('Retriving data feed names')
+
+
+    f = tm.ACT_TYPES
+    #For now we only accept subscriptions
+    if taxii_message.action == f[0]:
+
+        try:
+            logger.debug('Obteniendo el data feed [%s]', make_safe(taxii_message.feed_name))
+            data_feed = DataFeed.objects.get(name=taxii_message.feed_name)
+        except:
+            logger.debug('Attempting to subscribe to unknown data feed [%s]', make_safe(taxii_message.feed_name))
+            m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_NOT_FOUND, message='Data feed does not exist [%s]' % (make_safe(taxii_message.feed_name)))
+            return create_taxii_response(m, use_https=request.is_secure())
+
+        try:
+            binding_id = taxii_message.delivery_parameters.inbox_protocol
+            logger.debug('Obteniendo el protocol binding [%s]', make_safe(binding_id))
+            protocol_binding = ProtocolBindingId.objects.get(binding_id=binding_id)
+            message_binding = taxii_message.delivery_parameters.delivery_message_binding
+            logger.debug('Obteniendo el message binding [%s]', make_safe(message_binding))
+            message_binding = MessageBindingId.objects.get(binding_id=message_binding)
+        except:
+            logger.debug('Attempting to subscribe to use unknowon protocol or message bindings')
+            m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_NOT_FOUND, message='Protocol or message bindings does not exist')
+            return create_taxii_response(m, use_https=request.is_secure())
+
+
+        subscr_methods = DataFeedSubscriptionMethod()
+        subscr_methods.title = taxii_message.delivery_parameters.inbox_address
+        subscr_methods.description = taxii_message.delivery_parameters.inbox_address
+        subscr_methods.address = taxii_message.delivery_parameters.inbox_address
+        subscr_methods.protocol_binding = protocol_binding
+
+        subscr_methods.save()
+        subscr_methods.message_bindings.add(message_binding)
+        subscr_methods.save()
+
+        user = User.objects.get(id=1)
+
+        data_feed_subscription = DataFeedSubscription()
+        data_feed_subscription.active = True
+        data_feed_subscription.expires = timezone.now() + datetime.timedelta(days=500)
+        data_feed_subscription.data_feed_method = subscr_methods
+        data_feed_subscription.data_feed = data_feed
+        data_feed_subscription.user = user
+
+        data_feed_subscription.subscription_id = DataFeedSubscription.objects.latest('id').id
+
+        data_feed_subscription.save()
+
+        delivery_parameters = tm.DeliveryParameters(inbox_protocol=taxii_message.delivery_parameters.inbox_protocol,
+                                inbox_address=taxii_message.delivery_parameters.inbox_address,
+                                delivery_message_binding=taxii_message.delivery_parameters.delivery_message_binding,
+                                content_bindings=taxii_message.delivery_parameters.content_bindings)
+
+
+        poll_instances = []
+        for poll_info in data_feed.poll_service_instances.all():
+            poll_inst = tm.ManageFeedSubscriptionResponse.PollInstance(poll_protocol = poll_info.protocol_binding.binding_id,
+                        poll_address = poll_info.address)
+
+            mbindings = []
+            for mbinding_id in poll_info.message_bindings.all():
+                mbindings.append(mbinding_id.binding_id)
+
+            poll_inst.poll_message_bindings = mbindings
+
+            poll_instances.append(poll_inst)
+
+        subscription_instances = []
+
+        subscr_instance = tm.ManageFeedSubscriptionResponse.SubscriptionInstance(subscription_id = str(data_feed_subscription.id))
+        subscr_instance.delivery_parameters = [delivery_parameters]
+        subscr_instance.poll_instances = poll_instances
+
+        subscription_instances.append(subscr_instance)
+
+        feed_subscription_response_message = tm.ManageFeedSubscriptionResponse(message_id = tm.generate_message_id(), in_response_to = taxii_message.message_id,
+                feed_name = taxii_message.feed_name, message='Subscription sucseed', subscription_instances = subscription_instances)
+
+        return create_taxii_response(feed_subscription_response_message, use_https=request.is_secure())
+    else:
+        logger.debug('Modifing or deleteing subscription is not supported')
+        m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_FAILURE, message='Modifing subscriptions is not allowed')
+        return create_taxii_response(m, use_https=request.is_secure())
+
 
 def poll_get_content(request, taxii_message):
     """Returns a Poll response for a given Poll Request Message"""

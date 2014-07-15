@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
-from taxii.models import Inbox, RemoteInbox, DataFeed, RemoteDataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, RemoteDataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR
+from taxii.models import Inbox, RemoteInbox, DataFeed, RemoteDataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation, RemoteDataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR, TAXIIServices
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -83,4 +83,9 @@ class RemoteInboxSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = RemoteInbox
         fields = ('name', 'description', 'supported_content_bindings', 'supported_message_bindings', 'content_blocks', 'supported_protocol_binding', 'remote_data_feeds', 'date_created', 'date_updated')
+
+class TAXIIServicesSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = TAXIIServices
+        fields = ('id', 'name', 'description', 'address', 'service_type')
 

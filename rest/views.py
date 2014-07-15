@@ -1,10 +1,10 @@
 from django.shortcuts import render
 import logging
 import StringIO
-from taxii.models import Inbox, RemoteInbox, DataFeed, RemoteDataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation,RemoteDataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR
+from taxii.models import Inbox, RemoteInbox, DataFeed, RemoteDataFeed, MessageBindingId, ContentBindingId, ContentBlock, ProtocolBindingId, DataFeedPushMethod, DataFeedPollInformation,RemoteDataFeedPollInformation, DataFeedSubscriptionMethod, DataFeedSubscription, ContentBlockRTIR, TAXIIServices
 from rest_framework.response import Response
 from rest_framework import viewsets
-from taxii.serializers import UserSerializer, GroupSerializer, InboxSerializer, RemoteInboxSerializer, DataFeedSerializer, RemoteDataFeedSerializer, MessageBindingIdSerializer, ContentBindingIdSerializer, ContentBlockSerializer, ProtocolBindingIdSerializer, DataFeedPushMethodSerializer, DataFeedPollInformationSerializer, RemoteDataFeedPollInformationSerializer, DataFeedSubscriptionMethodSerializer, DataFeedSubscriptionSerializer, ContentBlockRTIRSerializer
+from taxii.serializers import UserSerializer, GroupSerializer, InboxSerializer, RemoteInboxSerializer, DataFeedSerializer, RemoteDataFeedSerializer, MessageBindingIdSerializer, ContentBindingIdSerializer, ContentBlockSerializer, ProtocolBindingIdSerializer, DataFeedPushMethodSerializer, DataFeedPollInformationSerializer, RemoteDataFeedPollInformationSerializer, DataFeedSubscriptionMethodSerializer, DataFeedSubscriptionSerializer, ContentBlockRTIRSerializer, TAXIIServicesSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -72,6 +72,22 @@ class RemoteInboxViewSet(viewsets.ModelViewSet):
 class ContentBlockRTIRViewSet(viewsets.ModelViewSet):
     queryset = ContentBlockRTIR.objects.all()
     serializer_class = ContentBlockRTIRSerializer
+
+class TAXIIServicesViewSet(viewsets.ModelViewSet):
+    queryset = TAXIIServices.objects.all()
+    serializer_class = TAXIIServicesSerializer
+
+@api_view(['GET'])
+def get_feed_managment_services(request):
+    logger = logging.getLogger('TAXIIApplication.rest.views.get_feed_managment_services')
+    logger.debug('Entering get feed managment services service')
+    logger.debug(request.method)
+
+    if request.method =='GET':
+        queryset = TAXIIServices.objects.filter(service_type = 'FeedManagment' )
+        serializer = TAXIIServicesSerializer(queryset, many=True)
+        return Response(serializer.data)
+
 
 @api_view(['GET', 'POST'])
 def alta_informacion(request):

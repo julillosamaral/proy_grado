@@ -183,7 +183,7 @@ class DataFeed(models.Model):
     #authentication_required = models.BooleanField(default=True)
     supported_content_bindings = models.ManyToManyField(ContentBindingId)
     push_methods = models.ManyToManyField(DataFeedPushMethod)
-    poll_service_instances = models.ManyToubscription_methodsanyField(DataFeedPollInformation)
+    poll_service_instances = models.ManyToManyField(DataFeedPollInformation)
     subscription_methods = models.ManyToManyField(DataFeedSubscriptionMethod, blank=True, null=True)
     content_blocks = models.ManyToManyField(ContentBlock, blank=True, null=True)
 
@@ -308,4 +308,9 @@ class RemoteInbox(models.Model):
         verbose_name = "Remote Inbox"
         verbose_name_plural = "Remote Inboxes"
 
+class TAXIIServices(models.Model):
+    name = models.CharField(max_length=MAX_TITLE_LEN, unique=True)
+    description = models.TextField(blank=True)
+    address = models.URLField()
+    service_type = models.CharField(max_length=MAX_TITLE_LEN)
 

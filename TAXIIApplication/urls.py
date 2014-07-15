@@ -25,6 +25,7 @@ router.register(r'remoteDataFeed', views.RemoteDataFeedViewSet)
 router.register(r'inbox', views.InboxViewSet)
 router.register(r'remoteInbox', views.RemoteInboxViewSet)
 router.register(r'contentBlockRTIR', views.ContentBlockRTIRViewSet)
+router.register(r'taxiiServices', views.TAXIIServicesViewSet)
 
 #urlpatterns = router.urls
 

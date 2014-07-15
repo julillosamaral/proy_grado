@@ -5,5 +5,6 @@ urlpatterns = patterns('',
     url(r'^poll/$', 'taxii.views.poll_service'),
     url(r'^discovery/$', 'taxii.views.discovery_service'),
     url(r'^feedManagment/$', 'taxii.views.feed_managment_service'),
+    url(r'^feedSubscription/$', 'taxii.views.subscription_service'),
 )
 
