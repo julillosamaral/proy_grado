@@ -87,5 +87,5 @@ class RemoteInboxSerializer(serializers.HyperlinkedModelSerializer):
 class TAXIIServicesSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = TAXIIServices
-        fields = ('id', 'name', 'description', 'address', 'service_type')
+        fields = ('id', 'name', 'description', 'inbox', 'poll', 'feed_managment', 'subscription')
 

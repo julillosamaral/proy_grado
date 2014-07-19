@@ -11,7 +11,11 @@ from rest_framework.decorators import api_view
 from django.contrib.auth.models import User
 from tasks import poll_request, envio_informacion
 from urlparse import urlparse
-
+import libtaxii.messages as tm
+import libtaxii.clients as tc
+import libtaxii as t
+import json
+from django.http import HttpResponse
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -77,17 +81,50 @@ class TAXIIServicesViewSet(viewsets.ModelViewSet):
     queryset = TAXIIServices.objects.all()
     serializer_class = TAXIIServicesSerializer
 
-@api_view(['GET'])
-def get_feed_managment_services(request):
-    logger = logging.getLogger('TAXIIApplication.rest.views.get_feed_managment_services')
-    logger.debug('Entering get feed managment services service')
-    logger.debug(request.method)
+class FeedManagmentServicesViewSet(viewsets.ModelViewSet):
+    queryset = TAXIIServices.objects.exclude(feed_managment__isnull=True).exclude(feed_managment__exact='')
+    serializer_class = TAXIIServicesSerializer
 
-    if request.method =='GET':
-        queryset = TAXIIServices.objects.filter(service_type = 'FeedManagment' )
-        serializer = TAXIIServicesSerializer(queryset, many=True)
-        return Response(serializer.data)
+@api_view(['GET', 'POST'])
+def obtener_remote_data_feeds(request):
 
+    feed_managment = TAXIIServices.objects.get(id = request.DATA.get('id'))
+    urlParsed = urlparse(feed_managment.feed_managment)
+
+    logger = logging.getLogger('TAXIIApplication.rest.tasks.obtener_remote_data_feeds')
+
+    logger.debug('Obtengo los data feeds en el servidor')
+    logger.debug('Host: ' + urlParsed.hostname)
+    logger.debug('Path: ' + urlParsed.path)
+    logger.debug('Port: ' + str(urlParsed.port))
+
+    host = urlParsed.hostname
+    path = urlParsed.path
+    port = str(urlParsed.port)
+
+    feed_information = tm.FeedInformationRequest(message_id=tm.generate_message_id())
+    feed_info_xml = feed_information.to_xml()
+    logger.debug('Se envia el siguiente mensaje: ' + feed_info_xml)
+    client = tc.HttpClient()
+    resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_info_xml, port)
+
+    response_message = t.get_message_from_http_response(resp, '0')
+    logger.debug("La respuesta fue: " + response_message.to_xml())
+    try:
+        taxii_message = tm.get_message_from_xml(response_message.to_xml())
+
+        logger.debug("El json es: " + taxii_message.to_json())
+
+        feed_informations = taxii_message.feed_informations
+
+        feed_names = []
+        for feed in feed_informations:
+            feed_names.append({"name" : feed.feed_name})
+
+        json_data = json.dumps({ "items" : feed_names } )
+        return HttpResponse(json_data, content_type="application/json")
+    except Exception as ex:
+        logger.debug('El mensaje no pudo ser parseado:s', ex.message)
 
 @api_view(['GET', 'POST'])
 def alta_informacion(request):
@@ -113,18 +150,10 @@ def alta_informacion(request):
             contentB = ContentBlockRTIR(rtir_id = rtir_id, content_block = ContentBlock.objects.get(id=taxii_id))
             logger.debug('Serializo el nuevo objeto creado para que sea devuelto')
             serializerRT = ContentBlockRTIRSerializer(contentB, many = False)
+            serializerRT.save()
             logger.debug('Retorno el nuevo objeto creado')
             return Response(serializerRT.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-#ESTE YA LO TENGO DE LO CREADO AL PRINCIPIO.
-#@api_view(['GET','POST'])
-#def listar_data_feeds(request):
-
-#ESTE TENGO QUE VER COMO CARAJO LO HAGO
-#@api_view(['GET','POST'])
-#def subscripcion_data_feed(request):
 
 @api_view(['POST'])
 def obtener_data_feeds(request):
@@ -175,25 +204,36 @@ def test(request):
     logger.debug('TEST' + str(data))
     return Response(status = status.HTTP_200_OK)
 
+@api_view(['POST'])
+def subscripcion_data_feed(request):
+    logger = logging.getLogger('TAXIIApplication.taxii.views.subscripcion_data_feed')
+    logger.debug('Se comienza la subscripcion de data feeds')
+    logger.debug(request.DATA)
 
-#@api_view(['GET','POST'])
-#def alta_servicios(request):
+    data_feed = request.DATA.get('data_feed')
+    service = request.DATA.get('service')
 
+    feed_managment = TAXIIServices.objects.get(id = service)
+    urlParsed = urlparse(feed_managment.feed_managment)
 
-#@api_view(['GET','POST'])
-#def listado_servicios(request):
+    logger.debug('Host: ' + urlParsed.hostname)
+    logger.debug('Path: ' + urlParsed.path)
+    logger.debug('Port: ' + str(urlParsed.port))
 
+    host = urlParsed.hostname
+    path = urlParsed.path
+    port = str(urlParsed.port)
 
-#@api_view(['GET','POST'])
-#def baja_servicios(request):
+    delivery_parameters = tm11.DeliveryParameters(inbox_protocol='urn:taxii.mitre.org:protocol:https:1.0', inbox_address='www.address.com',
+            delivery_message_binding='urn:taxii.mitre.org:message:xml:1.0', content_bindings=[])
 
+    f = tm11.ACT_TYPES
 
-#@api_view(['GET','POST'])
-#def obtener_info_servicios(request):
+    feed_subscription = tm11.ManageFeedSubscriptionRequest(message_id=tm11.generate_message_id(), feed_name=data_feed,
+                    action= f[0], subscription_id='1', delivery_parameters=delivery_parameters)
+    feed_subscription_xml = feed_subscription.to_xml()
 
-
-#@api_view(['GET','POST'])
-#def modificar_servicios(request):
-
-#Casos de uso de subscribirse a data feeds en otros clientes
+    client = tc.HttpClient()
+    resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_subscription_xml, port)
+    response_message = t.get_message_from_http_response(resp, '0')
 

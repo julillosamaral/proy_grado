@@ -311,6 +311,8 @@ class RemoteInbox(models.Model):
 class TAXIIServices(models.Model):
     name = models.CharField(max_length=MAX_TITLE_LEN, unique=True)
     description = models.TextField(blank=True)
-    address = models.URLField()
-    service_type = models.CharField(max_length=MAX_TITLE_LEN)
+    inbox = models.URLField()
+    poll = models.URLField()
+    feed_managment = models.URLField()
+    subscription = models.URLField()
 
