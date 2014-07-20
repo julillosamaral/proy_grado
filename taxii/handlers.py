@@ -318,7 +318,7 @@ def feed_subscription_get_content(request, taxii_message):
             m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_NOT_FOUND, message='Protocol or message bindings does not exist')
             return create_taxii_response(m, use_https=request.is_secure())
 
-
+        logger.debug("Voy a armar el mensaje de respuesta")
         subscr_methods = DataFeedSubscriptionMethod()
         subscr_methods.title = taxii_message.delivery_parameters.inbox_address
         subscr_methods.description = taxii_message.delivery_parameters.inbox_address
@@ -329,17 +329,17 @@ def feed_subscription_get_content(request, taxii_message):
         subscr_methods.message_bindings.add(message_binding)
         subscr_methods.save()
 
-        user = User.objects.get(id=1)
+        logger.debug("Guarde la informacion correctamente")
 
+        user = User.objects.get(id=1)
+        logger.debug("obtiene el usuario")
         data_feed_subscription = DataFeedSubscription()
         data_feed_subscription.active = True
         data_feed_subscription.expires = timezone.now() + datetime.timedelta(days=500)
         data_feed_subscription.data_feed_method = subscr_methods
         data_feed_subscription.data_feed = data_feed
         data_feed_subscription.user = user
-
         data_feed_subscription.subscription_id = DataFeedSubscription.objects.latest('id').id
-
         data_feed_subscription.save()
 
         delivery_parameters = tm.DeliveryParameters(inbox_protocol=taxii_message.delivery_parameters.inbox_protocol,
@@ -347,7 +347,7 @@ def feed_subscription_get_content(request, taxii_message):
                                 delivery_message_binding=taxii_message.delivery_parameters.delivery_message_binding,
                                 content_bindings=taxii_message.delivery_parameters.content_bindings)
 
-
+        logger.debug("retorno las instancias de poll service")
         poll_instances = []
         for poll_info in data_feed.poll_service_instances.all():
             poll_inst = tm.ManageFeedSubscriptionResponse.PollInstance(poll_protocol = poll_info.protocol_binding.binding_id,
@@ -368,7 +368,7 @@ def feed_subscription_get_content(request, taxii_message):
         subscr_instance.poll_instances = poll_instances
 
         subscription_instances.append(subscr_instance)
-
+        logger.debug("Termina y devuelvo la respuesta")
         feed_subscription_response_message = tm.ManageFeedSubscriptionResponse(message_id = tm.generate_message_id(), in_response_to = taxii_message.message_id,
                 feed_name = taxii_message.feed_name, message='Subscription sucseed', subscription_instances = subscription_instances)
 

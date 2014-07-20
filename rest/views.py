@@ -17,6 +17,10 @@ import libtaxii as t
 import json
 from django.http import HttpResponse
 
+
+INBOX_SERVICES_URL= "http://192.168.0.103:8000/services/inbox"
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -121,7 +125,24 @@ def obtener_remote_data_feeds(request):
         for feed in feed_informations:
             feed_names.append({"name" : feed.feed_name})
 
-        json_data = json.dumps({ "items" : feed_names } )
+        protocolBindings = ProtocolBindingId.objects.all()
+        protocol_bindings = []
+        for proto in protocolBindings:
+            protocol_bindings.append({"binding_id" : proto.binding_id})
+
+        contentBindings = ContentBindingId.objects.all()
+        content_bindings = []
+        for content in contentBindings:
+            content_bindings.append({"binding_id" : content.binding_id})
+
+        messageBindings = MessageBindingId.objects.all()
+        message_bindings = []
+        for message in messageBindings:
+            message_bindings.append({"binding_id" : message.binding_id})
+
+        json_data = json.dumps({ "items" : feed_names, "protocol_bindings" : protocol_bindings, "content_bindings" : content_bindings, "message_bindings" : message_bindings })
+
+        logger.debug("El json que quiero devolver es:" + json_data)
         return HttpResponse(json_data, content_type="application/json")
     except Exception as ex:
         logger.debug('El mensaje no pudo ser parseado:s', ex.message)
@@ -211,10 +232,14 @@ def subscripcion_data_feed(request):
     logger.debug(request.DATA)
 
     data_feed = request.DATA.get('data_feed')
-    service = request.DATA.get('service')
+    service = request.DATA.get('id')
+
+    inbox_protocol = request.DATA.get('protocol_binding')
+    message_binding = request.DATA.get('message_binding')
+    content_binding = request.DATA.get('content_binding')
 
     feed_managment = TAXIIServices.objects.get(id = service)
-    urlParsed = urlparse(feed_managment.feed_managment)
+    urlParsed = urlparse(feed_managment.subscription)
 
     logger.debug('Host: ' + urlParsed.hostname)
     logger.debug('Path: ' + urlParsed.path)
@@ -224,16 +249,17 @@ def subscripcion_data_feed(request):
     path = urlParsed.path
     port = str(urlParsed.port)
 
-    delivery_parameters = tm11.DeliveryParameters(inbox_protocol='urn:taxii.mitre.org:protocol:https:1.0', inbox_address='www.address.com',
-            delivery_message_binding='urn:taxii.mitre.org:message:xml:1.0', content_bindings=[])
+    delivery_parameters = tm.DeliveryParameters(inbox_protocol=inbox_protocol, inbox_address=INBOX_SERVICES_URL,
+            delivery_message_binding=message_binding, content_bindings=content_binding)
 
-    f = tm11.ACT_TYPES
+    f = tm.ACT_TYPES
 
-    feed_subscription = tm11.ManageFeedSubscriptionRequest(message_id=tm11.generate_message_id(), feed_name=data_feed,
+    feed_subscription = tm.ManageFeedSubscriptionRequest(message_id=tm.generate_message_id(), feed_name=data_feed,
                     action= f[0], subscription_id='1', delivery_parameters=delivery_parameters)
     feed_subscription_xml = feed_subscription.to_xml()
 
     client = tc.HttpClient()
     resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_subscription_xml, port)
-    response_message = t.get_message_from_http_response(resp, '0')
-
+    logger.debug("Me responde el servidor")
+#    response_message = t.get_message_from_http_response(resp, '0')
+    return Response(status = status.HTTP_200_OK)

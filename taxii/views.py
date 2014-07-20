@@ -98,8 +98,6 @@ def discovery_service(request):
     resp = handlers.discovery_get_services(request, taxii_message)
     return resp
 
-
-
 @csrf_exempt
 @taxii_auth_check
 def feed_managment_service(request):
@@ -122,7 +120,7 @@ def feed_managment_service(request):
     if taxii_message.message_type != tm_version.MSG_FEED_INFORMATION_REQUEST:
         logger.info('TAXII message with id [%s] was not Feed Managment request [%s]', make_safe(taxii_message.message_id), make_safe(taxii_message.message_type))
         m = tm_version.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_FAILURE, message='Message sent to feed managment service did not have a feed_managmen_request message type')
-        return handlers.create_taxii_response(m, use_https=request.is_securesecure())
+        return handlers.create_taxii_response(m, use_https=request.is_secure())
 
     resp = handlers.feed_managment_get_content(request, taxii_message)
     return resp
@@ -150,9 +148,11 @@ def subscription_service(request):
     if taxii_message.message_type != tm_version.MSG_MANAGE_FEED_SUBSCRIPTION_REQUEST:
         logger.info('TAXII message with id [%s] was not Subscription Managment request [%s]', make_safe(taxii_message.message_id), make_safe(taxii_message.message_type))
         m = tm_version.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_FAILURE, message='Message sent to feed managment service did not have a feed_managmen_request message type')
-        return handlers.create_taxii_response(m, use_https=request.is_securesecure())
+        return handlers.create_taxii_response(m, use_https=request.is_secure())
 
     resp = handlers.feed_subscription_get_content(request, taxii_message)
+
+    logger.debug("Le envio la respuesta al cliente")
     return resp
 
 
