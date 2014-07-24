@@ -100,7 +100,6 @@ def obtener_data_feeds(host, port, path):
     logger.debug('Path: ' + path)
     logger.debug('Port: ' + str(port))
 
-
     feed_information = tm.FeedInformationRequest(message_id=tm.generate_message_id())
     feed_info_xml = feed_information.to_xml()
     logger.debug('Se envia el siguiente mensaje: ' + feed_info_xml)

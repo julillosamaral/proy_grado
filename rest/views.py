@@ -147,6 +147,114 @@ def obtener_remote_data_feeds(request):
     except Exception as ex:
         logger.debug('El mensaje no pudo ser parseado:s', ex.message)
 
+
+
+@api_view(['GET', 'POST'])
+def registrar_remote_data_feeds(request):
+    feed_managment = TAXIIServices.objects.get(id = request.DATA.get('id'))
+    urlParsed = urlparse(feed_managment.feed_managment)
+
+    logger = logging.getLogger('TAXIIApplication.rest.tasks.obtener_remote_data_feeds')
+
+    logger.debug('Obtengo los data feeds en el servidor')
+    logger.debug('Host: ' + urlParsed.hostname)
+    logger.debug('Path: ' + urlParsed.path)
+    logger.debug('Port: ' + str(urlParsed.port))
+
+    host = urlParsed.hostname
+    path = urlParsed.path
+    port = str(urlParsed.port)
+
+    feed_information = tm.FeedInformationRequest(message_id=tm.generate_message_id())
+    feed_info_xml = feed_information.to_xml()
+    logger.debug('Se envia el siguiente mensaje: ' + feed_info_xml)
+    client = tc.HttpClient()
+    resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_info_xml, port)
+
+    response_message = t.get_message_from_http_response(resp, '0')
+    logger.debug("La respuesta fue: " + response_message.to_xml())
+    try:
+        taxii_message = tm.get_message_from_xml(response_message.to_xml())
+
+        logger.debug("Comiendo a iterar entre los feed informations")
+        feed_informations = taxii_message.feed_informations
+        for feed in feed_informations:
+            logger.debug("Creo nuevo remote data feed")
+            remote_df = RemoteDataFeed()
+            remote_df.name = feed.feed_name
+            logger.debug(feed.feed_name)
+            if feed.feed_description == None:
+                remote_df.description = "None"
+            else:
+                remote_df.description = feed.feed_description
+
+            remote_df.save()
+            i = 0
+            logger.debug('Obtengo los subscription methods')
+            for sm in feed.subscription_methods:
+                protocol_binding = ProtocolBindingId(binding_id = sm.subscription_protocol)
+                protocol_binding.save()
+
+                dfsm = DataFeedSubscriptionMethod()
+                dfsm.title = feed.feed_name + "_"+str(i)
+                dfsm.address = sm.subscription_address
+                dfsm.protocol_binding=protocol_binding
+
+                dfsm.save()
+                for mb in sm.subscription_message_bindings:
+                    msgb = MessageBindingId(binding_id = mb)
+                    msgb.save()
+                    dfsm.message_bindings.add(msgb)
+                dfsm.save()
+                remote_df.subscription_methods.add(dfsm)
+
+            logger.debug('Obtengo los content bindings')
+            for sc in feed.supported_contents:
+                cb = ContentBindingId(binding_id = sc )
+                cb.save()
+                remote_df.supported_content_bindings.add(cb)
+
+            logger.debug('Obtengo los push methods')
+            for pm in feed.push_methods:
+                pb = ProtocolBindingId(binding_id = pm.push_protocol)
+                pb.save()
+                mb = MessageBindingId(binding_id = pm.push_message_bindings)
+                mb.save()
+                dpm = DataFeedPushMethod(protocol_binding = pb, message_binding = mb)
+                dpm.save()
+
+                remote_df.push_methods.add(dpm)
+
+
+            poll_service_instances = []
+            logger.debug('Obtengo las poll service instances')
+            for psi in feed.polling_service_instances:
+
+                rdfpi = RemoteDataFeedPollInformation()
+                rdfpi.address = psi.poll_address
+
+                pb = ProtocolBindingId(binding_id = psi.poll_protocol)
+                pb.save()
+                rdfpi.protocol_binding = pb
+                rdfpi.save()
+
+                logger.debug(psi.poll_message_bindings)
+                for msg in psi.poll_message_bindings:
+                    msgb = MessageBindingId(binding_id = msg)
+                    msgb.save()
+                    rdfpi.message_bindings.add(msgb)
+                logger.debug("Aca agrego")
+                rdfpi.save()
+                remote_df.poll_service_instances.add(rdfpi)
+            logger.debug("Guardo el remote data feed")
+            remote_df.save()
+            logger.debug("Guarde el remote data feed y voy a insertar otro")
+
+        return Response(status=status.HTTP_201_CREATED)
+    except Exception as ex:
+        logger.debug( ex)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(['GET', 'POST'])
 def alta_informacion(request):
     """
@@ -176,26 +284,17 @@ def alta_informacion(request):
             return Response(serializerRT.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-def obtener_data_feeds(request):
-    logger = logging.getLogger('TAXIIApplication.taxii.views.obtener_data_feeds')
-    logger.debug('Se comienza la obtencion de data feeds')
-
-    url = request.DATA.get('url')
-    urlParsed = urlparse(url)
-
-    obtener_data_feeds.delay(urlParsed.hostname, urlParsed.port, urlParsed.path)
 
 @api_view(['POST'])
 def envio_informacion(request):
     logger = logging.getLogger('TAXIIApplication.taxii.views.envio_informacion')
     logger.debug('Se comienza el envio de informacion')
-    inbox_id = request.DATA.get('id')
+    sub_service_id = request.DATA.get('id')
 
-    inbox_service = RemoteInbox.objects.get(id = inbox_id)
+    subscription_service = DataFeedSubscription.objects.get(id = sub_service_id)
 
-    urlParsed = urlparse(inbox_service.address)
-    envio_informacion.delay(data_feed = inbox_service.data_feed, host = urlparse.hostname, path = urlParsed.path, port = urlParsed.port)
+    urlParsed = urlparse(subscription_service.data_feed_subscription.address)
+    envio_informacion.delay(data_feed = subscription_service.data_feed.name, host = urlparse.hostname, path = urlParsed.path, port = urlParsed.port)
 
 @api_view(['POST'])
 def poll_informacion(request):
@@ -204,15 +303,18 @@ def poll_informacion(request):
     logger.debug('Los datos que llegan al request son: ')
     logger.debug(request.DATA)
 
-    selected_item = request.DATA.get('id')
+    selected_item = request.DATA.get('id_data_feed')
     data_feed = RemoteDataFeed.objects.get(id = selected_item)
     logger.debug('El data feed obtenido es:' + data_feed.name)
 
-    data_feed_poll_info = data_feed.poll_service_instance
-    urlParsed = urlparse(data_feed_poll_info.address)
+    data_feed_poll_info = data_feed.poll_service_instances
 
-    logger.debug('Los datos de conexion son: ' + urlParsed.hostname + ' ' + str(urlParsed.port) + ' ' + urlParsed.path)
-    poll_request.delay(collection_name = data_feed.name, subscription_id = '1', host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)
+    for dfpi in data_feed_poll_info.all():
+        urlParsed = urlparse(dfpi.address)
+
+        logger.debug('Los datos de conexion son: ' + urlParsed.hostname + ' ' + str(urlParsed.port) + ' ' + urlParsed.path)
+        poll_request.delay(collection_name = data_feed.name, subscription_id = '1', host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)
+
     return Response(status = status.HTTP_200_OK)
 
 
@@ -224,6 +326,23 @@ def test(request):
     data = request.DATA
     logger.debug('TEST' + str(data))
     return Response(status = status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def obtener_data_feed_subscriptions(request):
+    logger = logging.getLogger('TAXIIApplication.taxii.views.obtener_data_feed_subscriptions')
+    logger.debug('Se obtienen las subscripciones a los data feeds')
+
+    subscriptions = DataFeedSubscription.objects.all()
+
+    subs = []
+    for sub in subscriptions:
+        subs.append({"id" : sub.id, "address" : sub.data_feed_method.address, "data_feed_name" : sub.data_feed.name})
+
+
+    json_data = json.dumps({ "items" : subs })
+    logger.debug("El json que quiero devolver es:" + json_data)
+    return HttpResponse(json_data, content_type="application/json")
 
 @api_view(['POST'])
 def subscripcion_data_feed(request):

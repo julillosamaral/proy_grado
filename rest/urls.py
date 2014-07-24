@@ -7,6 +7,8 @@ urlpatterns = patterns('',
     url(r'^obtener_data_feeds/$',  'rest.views.obtener_remote_data_feeds'),
     url(r'^alta_informacion/$', 'rest.views.alta_informacion'),
     url(r'^poll_informacion/$', 'rest.views.poll_informacion' ),
+    url(r'^data_feed_subscriptions/$', 'rest.views.obtener_data_feed_subscriptions'),
+    url(r'^registrar_remote_data_feeds/$', 'rest.views.registrar_remote_data_feeds'),
     url(r'^test/$', 'rest.views.test')
 )
 

@@ -262,7 +262,7 @@ class RemoteDataFeedPollInformation(models.Model):
         if self.title:
             return u'%s' % (self.title)
         else:
-            return u'%s | %s' % (self.protocol_binding, self.message_binding)
+            return u'%s' % (self.protocol_binding)
 
     class Meta:
         ordering = ['address']
@@ -275,7 +275,8 @@ class RemoteDataFeed(models.Model):
     description = models.TextField(blank=True)
     supported_content_bindings = models.ManyToManyField(ContentBindingId)
     push_methods = models.ManyToManyField(DataFeedPushMethod)
-    poll_service_instance = models.ForeignKey(RemoteDataFeedPollInformation, null=True)
+    #Ver si el de abajo no puede ser many to many
+    poll_service_instances = models.ManyToManyField(RemoteDataFeedPollInformation, null=True)
     subscription_methods = models.ManyToManyField(DataFeedSubscriptionMethod, blank=True, null=True)
     content_blocks = models.ManyToManyField(ContentBlock, blank=True, null=True)
 
