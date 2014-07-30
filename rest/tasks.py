@@ -5,7 +5,7 @@ import libtaxii.messages_11 as tm11
 import libtaxii.messages as tm
 import libtaxii.clients as tc
 import logging
-from taxii.models import DataFeedSubscriptionMethod
+from taxii.models import DataFeedSubscriptionMethod, ContentBlock, ContentBindingId
 from urlparse import urlparse
 
 @task()
@@ -48,7 +48,7 @@ def poll_request(collection_name, subscription_id, host, path, port):
     except Exception as ex:
         logger.debug('El mensaje no pudo ser parseado:s', ex.message)
 
-    if taxii_message.message_type != tm.MG_POLL_RESPONSE:
+    if taxii_message.message_type != tm.MSG_POLL_RESPONSE:
         logger.debug('El mensage recibio no es una respuesta TAXII')
     else:
         content_blocks = taxii_message.content_blocks
@@ -59,9 +59,12 @@ def poll_request(collection_name, subscription_id, host, path, port):
             p.description = 'Recibido por el inbox service'
             p.message_id = taxii_message.message_id
            #Ver si esta bien lo de abajo
-            p.content_binding = taxii_message.content_binding
-            p.content = cb
+            c = ContentBindingId(binding_id=cb.content_binding)
+            c.save()
+            p.content_binding = c
+            p.content = cb.content
             p.save()
+
 
 @task()
 def envio_informacion(data_feed, host, path, port):

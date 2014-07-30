@@ -261,28 +261,25 @@ def alta_informacion(request):
     List all snippets, or create a new snippet.
     """
     logger = logging.getLogger('TAXIIApplication.rest.views.alta_informacion')
-    logger.debug('Entering Inbox service')
+    logger.debug('Entering alta_informacion')
     logger.debug(request.method)
     if request.method == 'GET':
         content = ContentBlock.objects.all()
         serializer = ContentBlockSerializer(content, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
-        serializer = ContentBlockSerializer(data=request.DATA)
-        if serializer.is_valid():
-            serializer.save()
-            logger.debug('Request de rt id' + str(request.DATA.get('rt_id')))
-            logger.debug('Taxii id' + str(serializer.data.get('id')))
-            taxii_id = serializer.data.get('id')
-            rtir_id = request.DATA.get('rt_id')
-            logger.debug('Creo el nuevo objeto de ContentBlockRTIR')
-            contentB = ContentBlockRTIR(rtir_id = rtir_id, content_block = ContentBlock.objects.get(id=taxii_id))
-            logger.debug('Serializo el nuevo objeto creado para que sea devuelto')
-            serializerRT = ContentBlockRTIRSerializer(contentB, many = False)
-            serializerRT.save()
-            logger.debug('Retorno el nuevo objeto creado')
-            return Response(serializerRT.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	content_binding = ContentBindingId.objects.get(id=request.DATA.get('content_binding'))
+	cb = ContentBlock(title=request.DATA.get('title'), description=request.DATA.get('description') ,content_binding=content_binding, content=request.DATA.get('content'))
+	cb.save()
+	#taxii_id = serializer.data.get('id')
+	#rtir_id = request.DATA.get('rt_id')
+        #logger.debug('Creo el nuevo objeto de ContentBlockRTIR')
+        #contentB = ContentBlockRTIR(rtir_id = rtir_id, content_block = ContentBlock.objects.get(id=taxii_id))
+        #logger.debug('Serializo el nuevo objeto creado para que sea devuelto')
+        #serializerRT = ContentBlockRTIRSerializer(contentB, many = False)
+        #serializerRT.save()
+        #logger.debug('Retorno el nuevo objeto creado')
+	return Response(status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])
