@@ -5,7 +5,7 @@ import logging
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-import rt
+#import rt
 from stix.core import STIXPackage
 
 import libtaxii as t
@@ -386,10 +386,10 @@ def poll_get_content(request, taxii_message):
                 taxii_message.exclusive_begin_timestamp_label, taxii_message.inclusive_end_timestamp_label)
 
     try:
-        data_feed = DataFeed.objects.get(name=taxii_message.feed_name)
+        data_feed = DataFeed.objects.get(name=taxii_message.collection_name)
     except:
-        logger.debug('Attempting to poll unknown data feed [%s]', make_safe(taxii_message.feed_name))
-        m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_NOT_FOUND, message='Data feed does not exist [%s]' % (make_safe(taxii_message.feed_name)))
+        logger.debug('Attempting to poll unknown data feed [%s]', make_safe(taxii_message.collection_name))
+        m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_NOT_FOUND, message='Data feed does not exist [%s]' % (make_safe(taxii_message.collection_name)))
         return create_taxii_response(m, use_https=request.is_secure())
 
     # build query for poll results

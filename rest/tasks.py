@@ -48,7 +48,7 @@ def poll_request(collection_name, subscription_id, host, path, port):
     except Exception as ex:
         logger.debug('El mensaje no pudo ser parseado:s', ex.message)
 
-    if taxii_message.message_type != tm.MG_POLL_RESPONSE:
+    if taxii_message.message_type != tm.MSG_POLL_RESPONSE:
         logger.debug('El mensage recibio no es una respuesta TAXII')
     else:
         content_blocks = taxii_message.content_blocks
