@@ -10,9 +10,11 @@ from urlparse import urlparse
 
 @task()
 def poll_request(collection_name, subscription_id, host, path, port):
+    #Given the collection name, subscription id, host, path and port we make a poll request to 
+    #the client TAXII associated with the host, path and port for the subscription and collection given.
     logger = logging.getLogger('TAXIIApplication.rest.tasks.poll_request')
-    logger.debug('Se comienza el poll de informacion en el sistema')
-    logger.debug('Los parametros recibidos son: ')
+    logger.debug('Poll information starts')
+    logger.debug('Parameters are: ')
     logger.debug('Collection Name: ' + collection_name)
     logger.debug('Subscription Id: ' + str(subscription_id))
     logger.debug('Host: ' + str(host))
@@ -29,7 +31,7 @@ def poll_request(collection_name, subscription_id, host, path, port):
                                 subscription_id = subscription_id)
 
     poll_req_xml = poll_req.to_xml()
-    logger.debug('Se genero el siguiente mensaje Poll Request')
+    logger.debug('The following Poll Request message was generated')
     logger.debug('###########################################')
     logger.debug(poll_req_xml)
     logger.debug('###########################################')
@@ -38,7 +40,7 @@ def poll_request(collection_name, subscription_id, host, path, port):
     resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, poll_req_xml, port)
     response_message = t.get_message_from_http_response(resp, '0')
 
-    logger.debug('Se obtuvo la respuesta del sistema origen')
+    logger.debug('The response got from the sistem was: ')
     logger.debug('#########################################')
     logger.debug(response_message.to_xml())
     logger.debug('#########################################')
@@ -46,19 +48,19 @@ def poll_request(collection_name, subscription_id, host, path, port):
     try:
         taxii_message = tm.get_message_from_xml(response_message.to_xml())
     except Exception as ex:
-        logger.debug('El mensaje no pudo ser parseado:s', ex.message)
+        logger.debug('The message could not be parsed:s', ex.message)
 
     if taxii_message.message_type != tm.MSG_POLL_RESPONSE:
-        logger.debug('El mensage recibio no es una respuesta TAXII')
+        logger.debug('The message is not a TAXII response')
     else:
         content_blocks = taxii_message.content_blocks
-        logger.debug('Se procesan los content blocks')
+        logger.debug('We process the Content Blocks')
 
         for cb in content_blocks:
             p = ContentBlock()
-            p.description = 'Recibido por el inbox service'
+            p.description = 'Got from Inbox Service'
             p.message_id = taxii_message.message_id
-           #Ver si esta bien lo de abajo
+           
             c = ContentBindingId(binding_id=cb.content_binding)
             c.save()
             p.content_binding = c
@@ -68,13 +70,14 @@ def poll_request(collection_name, subscription_id, host, path, port):
 
 @task()
 def envio_informacion(data_feed, host, path, port):
+    #Given the host, port and path of a TAXII client we sent the data_feed to that client.
     logger = logging.getLogger('TAXIIApplication.rest.tasks.envio_informacion')
-    logger.debug('Obtengo los subscription Methods')
-    logger.debug('Los parametros recibidos son: ')
+    logger.debug('Get the subscription methods')
+    logger.debug('The parameters are: ')
     logger.debug('Host: ' + host)
     logger.debug('Path: ' + path)
     logger.debug('Port: ' + str(port))
-    logger.debug('El data feed es id y titulo' + str(data_feed.id) + data_feed.title)
+    logger.debug('Data Feed id and title:' + str(data_feed.id) + data_feed.title)
 
     content_blocks = data_feed.content_blocks
 
@@ -85,32 +88,33 @@ def envio_informacion(data_feed, host, path, port):
     inbox_message = tm11.InboxMessage(message_id = tm11.generate_message_id(), content_blocks=content)
 
     inbox_xml = inbox_message.to_xml()
-    logger.debug('El mensaje a enviar es: '+ inbox_xml)
+    logger.debug('The message to be sent is: '+ inbox_xml)
 
     client = tc.HttpClient()
     client.setProxy('noproxy')
 
     resp = client.callTaxiiService2(hostname, path, t.VID_TAXII_XML_10, inbox_xml, port)
     response_message = t.get_message_from_http_response(resp, '0')
-    logger.debug('El mensaje de respuesta fue: ' + response_message)
+    logger.debug('THe response message was: ' + response_message)
     #Con la respuesta creo que no hago nada. Queda loggeada nomas
 
 @task()
 def obtener_data_feeds(host, port, path):
+    #Given the host, port and path of a TAXII client we get the data feeds of that client
     logger = logging.getLogger('TAXIIApplication.rest.tasks.obtener_data_feeds')
-    logger.debug('Obtengo los data feeds en el servidor')
+    logger.debug('We get the server data feeds')
     logger.debug('Host: ' + host)
     logger.debug('Path: ' + path)
     logger.debug('Port: ' + str(port))
 
     feed_information = tm.FeedInformationRequest(message_id=tm.generate_message_id())
     feed_info_xml = feed_information.to_xml()
-    logger.debug('Se envia el siguiente mensaje: ' + feed_info_xml)
+    logger.debug('The following message is sent: ' + feed_info_xml)
     client = tc.HttpClient()
     resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_info_xml, port)
 
     response_message = t.get_message_from_http_response(resp, '0')
-    logger.debug('Se obtiene la siguiente respuesta: '+response_message)
+    logger.debug('We get the following response: '+response_message)
 
 
 

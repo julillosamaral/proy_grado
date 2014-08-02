@@ -1,6 +1,5 @@
 from django.conf.urls import patterns, url, include
 from rest_framework import routers
-#from taxii import views
 from rest import views
 from django.contrib import admin
 from rest_framework.urlpatterns import format_suffix_patterns
@@ -34,10 +33,10 @@ router.register(r'feedManagmentServices', views.FeedManagmentServicesViewSet)
 # Additionally, we include login URLs for the browseable API.
 
 urlpatterns = patterns('',
-    url(r'^', include(router.urls)),
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^admin/', include(admin.site.urls)),
-    url(r'^services/', include('taxii.urls')),
-    url(r'^rest_services/', include('rest.urls'))
+    url(r'^', include(router.urls)),													
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),		#authentication api url
+    url(r'^admin/', include(admin.site.urls)),											#admin urls
+    url(r'^services/', include('taxii.urls')),											#taxi services urls
+    url(r'^rest_services/', include('rest.urls'))										#rest services urls
 )
 

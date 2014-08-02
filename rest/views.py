@@ -22,82 +22,100 @@ INBOX_SERVICES_URL= "http://192.168.0.103:8000/services/inbox"
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates users.
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 class ProtocolBindingIdViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates ProtocolBindingIds
     queryset = ProtocolBindingId.objects.all()
     serializer_class = ProtocolBindingIdSerializer
 
 class ContentBindingIdViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates ContentBindingIds
     queryset = ContentBindingId.objects.all()
     serializer_class = ContentBindingIdSerializer
 
 class MessageBindingIdViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates MessageBindingIds
     queryset = MessageBindingId.objects.all()
     serializer_class = MessageBindingIdSerializer
 
 class DataFeedPushMethodViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates DataFeedPushMethods
     queryset = DataFeedPushMethod.objects.all()
     serializer_class = DataFeedPushMethodSerializer
 
 class DataFeedPollInformationViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates DataFeedPollInformations
     queryset = DataFeedPollInformation.objects.all()
     serializer_class = DataFeedPollInformationSerializer
 
 class RemoteDataFeedPollInformationViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates RemoteDataFeedPollInformations
     queryset = RemoteDataFeedPollInformation.objects.all()
     serializer_class = RemoteDataFeedPollInformationSerializer
 
 class DataFeedSubscriptionMethodViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates DataFeedSubscriptionMethods
     queryset = DataFeedSubscriptionMethod.objects.all()
     serializer_class = DataFeedSubscriptionMethodSerializer
 
 class ContentBlockViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates ContentBlocks
     queryset = ContentBlock.objects.all()
     serializer_class = ContentBlockSerializer
 
 class DataFeedViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates DataFeeds
     queryset = DataFeed.objects.all()
     serializer_class = DataFeedSerializer
 
 class RemoteDataFeedViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates RemoteDataFeeds
     queryset = RemoteDataFeed.objects.all()
     serializer_class = RemoteDataFeedSerializer
 
 class DataFeedSubscriptionViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates SubscriptionFeeds
     queryset = DataFeedSubscription.objects.all()
     serializer_class = DataFeedSubscriptionSerializer
 
 class InboxViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates Inboxes
     queryset = Inbox.objects.all()
     serializer_class = InboxSerializer
 
 class RemoteInboxViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates RemoteInboxes
     queryset = RemoteInbox.objects.all()
     serializer_class = RemoteInboxSerializer
 
 class ContentBlockRTIRViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates ContentBlockRTIRs
     queryset = ContentBlockRTIR.objects.all()
     serializer_class = ContentBlockRTIRSerializer
 
 class TAXIIServicesViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates TAXIIServices
     queryset = TAXIIServices.objects.all()
     serializer_class = TAXIIServicesSerializer
 
 class FeedManagmentServicesViewSet(viewsets.ModelViewSet):
+    #Gets, lists, creates or updates FeedManagementServices
     queryset = TAXIIServices.objects.exclude(feed_managment__isnull=True).exclude(feed_managment__exact='')
     serializer_class = TAXIIServicesSerializer
 
 @api_view(['GET', 'POST'])
 def obtener_remote_data_feeds(request):
-
+    #Given the id of a TAXII Service we make a FeedInformation request to that service address.
+    #The response is a list of the feed names of the TAXII client and a list of all protocol bindings, content binding and message binding.
     feed_managment = TAXIIServices.objects.get(id = request.DATA.get('id'))
     urlParsed = urlparse(feed_managment.feed_managment)
 
     logger = logging.getLogger('TAXIIApplication.rest.tasks.obtener_remote_data_feeds')
 
-    logger.debug('Obtengo los data feeds en el servidor')
+    logger.debug('We get the server data feeds')
     logger.debug('Host: ' + urlParsed.hostname)
     logger.debug('Path: ' + urlParsed.path)
     logger.debug('Port: ' + str(urlParsed.port))
@@ -108,16 +126,16 @@ def obtener_remote_data_feeds(request):
 
     feed_information = tm.FeedInformationRequest(message_id=tm.generate_message_id())
     feed_info_xml = feed_information.to_xml()
-    logger.debug('Se envia el siguiente mensaje: ' + feed_info_xml)
+    logger.debug('The following message is sent: ' + feed_info_xml)
     client = tc.HttpClient()
     resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_info_xml, port)
 
     response_message = t.get_message_from_http_response(resp, '0')
-    logger.debug("La respuesta fue: " + response_message.to_xml())
+    logger.debug("The response was: " + response_message.to_xml())
     try:
         taxii_message = tm.get_message_from_xml(response_message.to_xml())
 
-        logger.debug("El json es: " + taxii_message.to_json())
+        logger.debug("The JSON is: " + taxii_message.to_json())
 
         feed_informations = taxii_message.feed_informations
 
@@ -142,21 +160,22 @@ def obtener_remote_data_feeds(request):
 
         json_data = json.dumps({ "items" : feed_names, "protocol_bindings" : protocol_bindings, "content_bindings" : content_bindings, "message_bindings" : message_bindings })
 
-        logger.debug("El json que quiero devolver es:" + json_data)
+        logger.debug("The response is the following JSON: " + json_data)
         return HttpResponse(json_data, content_type="application/json")
     except Exception as ex:
-        logger.debug('El mensaje no pudo ser parseado:s', ex.message)
+        logger.debug('The message could not be parsed:s', ex.message)
 
 
 
 @api_view(['GET', 'POST'])
 def registrar_remote_data_feeds(request):
+    #Given the id of a TAXII service we get the data feeds of the TAXII Client and copy them to the current system.
     feed_managment = TAXIIServices.objects.get(id = request.DATA.get('id'))
     urlParsed = urlparse(feed_managment.feed_managment)
 
     logger = logging.getLogger('TAXIIApplication.rest.tasks.obtener_remote_data_feeds')
 
-    logger.debug('Obtengo los data feeds en el servidor')
+    logger.debug('We get the server data feeds')
     logger.debug('Host: ' + urlParsed.hostname)
     logger.debug('Path: ' + urlParsed.path)
     logger.debug('Port: ' + str(urlParsed.port))
@@ -167,19 +186,19 @@ def registrar_remote_data_feeds(request):
 
     feed_information = tm.FeedInformationRequest(message_id=tm.generate_message_id())
     feed_info_xml = feed_information.to_xml()
-    logger.debug('Se envia el siguiente mensaje: ' + feed_info_xml)
+    logger.debug('The following message is sent: ' + feed_info_xml)
     client = tc.HttpClient()
     resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_info_xml, port)
 
     response_message = t.get_message_from_http_response(resp, '0')
-    logger.debug("La respuesta fue: " + response_message.to_xml())
+    logger.debug("The response was: " + response_message.to_xml())
     try:
         taxii_message = tm.get_message_from_xml(response_message.to_xml())
 
-        logger.debug("Comiendo a iterar entre los feed informations")
+        logger.debug("Feed Information iteration")
         feed_informations = taxii_message.feed_informations
         for feed in feed_informations:
-            logger.debug("Creo nuevo remote data feed")
+            logger.debug("Create a new Remote Data Feed")
             remote_df = RemoteDataFeed()
             remote_df.name = feed.feed_name
             logger.debug(feed.feed_name)
@@ -190,7 +209,7 @@ def registrar_remote_data_feeds(request):
 
             remote_df.save()
             i = 0
-            logger.debug('Obtengo los subscription methods')
+            logger.debug('We get the subscription methods')
             for sm in feed.subscription_methods:
                 protocol_binding = ProtocolBindingId(binding_id = sm.subscription_protocol)
                 protocol_binding.save()
@@ -208,7 +227,7 @@ def registrar_remote_data_feeds(request):
                 dfsm.save()
                 remote_df.subscription_methods.add(dfsm)
 
-            logger.debug('Obtengo los content bindings')
+            logger.debug('We get the Content Bindings')
             for sc in feed.supported_contents:
                 cb = ContentBindingId(binding_id = sc )
                 cb.save()
@@ -227,7 +246,7 @@ def registrar_remote_data_feeds(request):
 
 
             poll_service_instances = []
-            logger.debug('Obtengo las poll service instances')
+            logger.debug('We get the Poll Service Instances')
             for psi in feed.polling_service_instances:
 
                 rdfpi = RemoteDataFeedPollInformation()
@@ -243,12 +262,11 @@ def registrar_remote_data_feeds(request):
                     msgb = MessageBindingId(binding_id = msg)
                     msgb.save()
                     rdfpi.message_bindings.add(msgb)
-                logger.debug("Aca agrego")
+                
                 rdfpi.save()
                 remote_df.poll_service_instances.add(rdfpi)
-            logger.debug("Guardo el remote data feed")
+            logger.debug("Save the remote data feed")
             remote_df.save()
-            logger.debug("Guarde el remote data feed y voy a insertar otro")
 
         return Response(status=status.HTTP_201_CREATED)
     except Exception as ex:
@@ -257,9 +275,10 @@ def registrar_remote_data_feeds(request):
 
 @api_view(['GET', 'POST'])
 def alta_informacion(request):
-    """
-    List all snippets, or create a new snippet.
-    """
+    #"""
+    #When in GET method return all the Content Blocks.
+    #When in POST method, given a content binding id, a title, description and content we create a Content Block.
+    #"""
     logger = logging.getLogger('TAXIIApplication.rest.views.alta_informacion')
     logger.debug('Entering alta_informacion')
     logger.debug(request.method)
@@ -268,24 +287,17 @@ def alta_informacion(request):
         serializer = ContentBlockSerializer(content, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
-	content_binding = ContentBindingId.objects.get(id=request.DATA.get('content_binding'))
-	cb = ContentBlock(title=request.DATA.get('title'), description=request.DATA.get('description') ,content_binding=content_binding, content=request.DATA.get('content'))
-	cb.save()
-	#taxii_id = serializer.data.get('id')
-	#rtir_id = request.DATA.get('rt_id')
-        #logger.debug('Creo el nuevo objeto de ContentBlockRTIR')
-        #contentB = ContentBlockRTIR(rtir_id = rtir_id, content_block = ContentBlock.objects.get(id=taxii_id))
-        #logger.debug('Serializo el nuevo objeto creado para que sea devuelto')
-        #serializerRT = ContentBlockRTIRSerializer(contentB, many = False)
-        #serializerRT.save()
-        #logger.debug('Retorno el nuevo objeto creado')
+    	content_binding = ContentBindingId.objects.get(id=request.DATA.get('content_binding'))
+    	cb = ContentBlock(title=request.DATA.get('title'), description=request.DATA.get('description') ,content_binding=content_binding, content=request.DATA.get('content'))
+    	cb.save()
 	return Response(status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])
 def envio_informacion(request):
+    #Given the id of a DataFeed Subscription we get the Data Feeds for that subscription.
     logger = logging.getLogger('TAXIIApplication.taxii.views.envio_informacion')
-    logger.debug('Se comienza el envio de informacion')
+    logger.debug('Start the sending of information')
     sub_service_id = request.DATA.get('id')
 
     subscription_service = DataFeedSubscription.objects.get(id = sub_service_id)
@@ -295,40 +307,32 @@ def envio_informacion(request):
 
 @api_view(['POST'])
 def poll_informacion(request):
+    #Given the id of a remote data feed, we get the poll service instances and for each make a poll request.
     logger = logging.getLogger('TAXIIApplication.taxii.views.poll_informacion')
-    logger.debug('Se comienza el poll de informacion')
-    logger.debug('Los datos que llegan al request son: ')
+    logger.debug('Start the poll of information')
+    logger.debug('Request data is: ')
     logger.debug(request.DATA)
 
     selected_item = request.DATA.get('id_data_feed')
     data_feed = RemoteDataFeed.objects.get(id = selected_item)
-    logger.debug('El data feed obtenido es:' + data_feed.name)
+    logger.debug('The data feed gotten is:' + data_feed.name)
 
     data_feed_poll_info = data_feed.poll_service_instances
 
     for dfpi in data_feed_poll_info.all():
         urlParsed = urlparse(dfpi.address)
 
-        logger.debug('Los datos de conexion son: ' + urlParsed.hostname + ' ' + str(urlParsed.port) + ' ' + urlParsed.path)
+        logger.debug('The conection data are: ' + urlParsed.hostname + ' ' + str(urlParsed.port) + ' ' + urlParsed.path)
         poll_request.delay(collection_name = data_feed.name, subscription_id = '1', host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)
 
     return Response(status = status.HTTP_200_OK)
 
 
-@api_view(['POST'])
-def test(request):
-    logger = logging.getLogger('TAXIIApplication.rest.views.test')
-    logger.debug('Hice la llamada rest a test')
-    logger.debug(request.method)
-    data = request.DATA
-    logger.debug('TEST' + str(data))
-    return Response(status = status.HTTP_200_OK)
-
-
 @api_view(['GET'])
 def obtener_data_feed_subscriptions(request):
+    #We get all the date feed subsctiptions and return the id, adress and data feed name of each.
     logger = logging.getLogger('TAXIIApplication.taxii.views.obtener_data_feed_subscriptions')
-    logger.debug('Se obtienen las subscripciones a los data feeds')
+    logger.debug('We get the subscriptions to the data feeds')
 
     subscriptions = DataFeedSubscription.objects.all()
 
@@ -338,13 +342,14 @@ def obtener_data_feed_subscriptions(request):
 
 
     json_data = json.dumps({ "items" : subs })
-    logger.debug("El json que quiero devolver es:" + json_data)
+    logger.debug("The JSON to return is:" + json_data)
     return HttpResponse(json_data, content_type="application/json")
 
 @api_view(['POST'])
 def subscripcion_data_feed(request):
+    #Given the id of a TAXII Service and the id of a Data Feed and the service id we make a Manage Feed Subscription request for that Data Feed.
     logger = logging.getLogger('TAXIIApplication.taxii.views.subscripcion_data_feed')
-    logger.debug('Se comienza la subscripcion de data feeds')
+    logger.debug('The data feed subscription starts')
     logger.debug(request.DATA)
 
     data_feed = request.DATA.get('data_feed')
@@ -376,6 +381,5 @@ def subscripcion_data_feed(request):
 
     client = tc.HttpClient()
     resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_subscription_xml, port)
-    logger.debug("Me responde el servidor")
-#    response_message = t.get_message_from_http_response(resp, '0')
+    logger.debug("The server responds")
     return Response(status = status.HTTP_200_OK)

@@ -249,6 +249,7 @@ class ContentBlockRTIR(models.Model):
     content_block = models.ForeignKey(ContentBlock)
 
 class RemoteDataFeedPollInformation(models.Model):
+    """Represents DataFeed Poll Information of remote TAXII clients """
     title = models.CharField(max_length=MAX_TITLE_LEN, blank=True)
     description = models.TextField(blank=True)
     address = models.URLField()
@@ -271,11 +272,12 @@ class RemoteDataFeedPollInformation(models.Model):
 
 
 class RemoteDataFeed(models.Model):
+    """Represents DataFeeds of remote TAXII clients """
     name = models.CharField(max_length=MAX_TITLE_LEN) # this will be used to access this data feed
     description = models.TextField(blank=True)
     supported_content_bindings = models.ManyToManyField(ContentBindingId)
     push_methods = models.ManyToManyField(DataFeedPushMethod)
-    #Ver si el de abajo no puede ser many to many
+    
     poll_service_instances = models.ManyToManyField(RemoteDataFeedPollInformation, null=True)
     subscription_methods = models.ManyToManyField(DataFeedSubscriptionMethod, blank=True, null=True)
     content_blocks = models.ManyToManyField(ContentBlock, blank=True, null=True)
@@ -291,6 +293,7 @@ class RemoteDataFeed(models.Model):
         verbose_name = "Remote Data Feed"
 
 class RemoteInbox(models.Model):
+    """Represents Inboxes of remote TAXII clients """
     name = models.CharField(max_length=MAX_TITLE_LEN, unique=True) # this will become part of the URL where it can be accessed at
     description = models.TextField(blank=True)
     supported_content_bindings = models.ManyToManyField(ContentBindingId)
@@ -310,6 +313,7 @@ class RemoteInbox(models.Model):
         verbose_name_plural = "Remote Inboxes"
 
 class TAXIIServices(models.Model):
+    """Represents all TAXII Services available """
     name = models.CharField(max_length=MAX_TITLE_LEN, unique=True)
     description = models.TextField(blank=True)
     inbox = models.URLField()

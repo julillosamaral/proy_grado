@@ -6,6 +6,7 @@ import taxii.handlers as handlers
 
 class ProcessExceptionMiddleware(object):
     def process_exception(self, request, exception):
+        #Method that process exceptions
         logger = logging.getLogger('TAXIIApplication.taxii.middleware.ProcessExceptionMiddleware.process_exception')
         logger.exception('Server error occured')
     

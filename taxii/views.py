@@ -152,7 +152,7 @@ def subscription_service(request):
 
     resp = handlers.feed_subscription_get_content(request, taxii_message)
 
-    logger.debug("Le envio la respuesta al cliente")
+    logger.debug("We send the response to the client")
     return resp
 
 

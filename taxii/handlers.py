@@ -5,7 +5,6 @@ import logging
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-#import rt
 from stix.core import STIXPackage
 
 import libtaxii as t
@@ -89,10 +88,10 @@ def validate_taxii_headers(request, request_message_id):
     """
     logger = logging.getLogger("taxii.utils.handlers.validate_taxii_headers")
     # Make sure the required headers are present
-    logger.debug("Se van a validar los headers taxii")
+    logger.debug("TAXII headers are going to be validated")
     missing_required_headers = set(DICT_REQUIRED_TAXII_HTTP_HEADERS).difference(set(request.META))
     if missing_required_headers:
-        logger.debug("Faltan headers requeridos")
+        logger.debug("MIssing required headers")
         required_headers = ', '.join(DICT_REVERSE_DJANGO_NORMALIZATION[x] for x in missing_required_headers)
         msg = "Required headers not present: [%s]" % (required_headers)
         m = tm.StatusMessage(tm.generate_message_id(), request_message_id, status_type=tm.ST_FAILURE, message=msg)
@@ -107,7 +106,7 @@ def validate_taxii_headers(request, request_message_id):
         supported_values = DICT_TAXII_HTTP_HEADER_VALUES[header]
 
         if header_value not in supported_values:
-            logger.debug("Un valor del header no es soportado [%s]", header_value)
+            logger.debug("A header value is not supported [%s]", header_value)
             msg = 'The value of %s is not supported. Supported values are %s' % (DICT_REVERSE_DJANGO_NORMALIZATION[header], supported_values)
             m = tm.StatusMessage(tm.generate_message_id(), request_message_id, status_type=tm.ST_FAILURE, message=msg)
             return create_taxii_response(m, use_https=request.is_secure())
@@ -141,7 +140,7 @@ def validate_taxii_request(request):
         return create_taxii_response(m, use_https=request.is_secure())
 
     header_validation_resp = validate_taxii_headers(request, '0') # TODO: What to use for request message id?
-    logger.info('Se va a validar el header [%s]', header_validation_resp)
+    logger.info('Validating header [%s]', header_validation_resp)
     if header_validation_resp: # If response is not None an validation of the TAXII headers failed
         logger.info('TAXII header validation failed.')
         return header_validation_resp
@@ -155,8 +154,9 @@ def validate_taxii_request(request):
     return None
 
 def create_RTIR_ticket(stix_package):
+    """ Creates a RTIR ticket with the title in the parameter """
     logger = logging.getLogger('taxii.utils.handlers.create_RTIR_ticket')
-    logger.debug('Creating new RTIR ticket')
+    logger.debug('Create new RTIR ticket')
 
     url = s.RTIR_URL
     user_login = s.RTIR_USER
@@ -226,7 +226,7 @@ def inbox_add_content(request, inbox_name, taxii_message):
     return create_taxii_response(m, use_https=request.is_secure())
 
 def get_message_bindings(message_bindings):
-
+    """ Returns the list of Message Bindings """
     logger = logging.getLogger('taxii.utils.handlers.feed_mangment_get_content')
     logger.debug('Retriving data feed names')
     list_msg_bindings = []
@@ -299,7 +299,7 @@ def feed_subscription_get_content(request, taxii_message):
     if taxii_message.action == f[0]:
 
         try:
-            logger.debug('Obteniendo el data feed [%s]', make_safe(taxii_message.feed_name))
+            logger.debug('Getting the data feed [%s]', make_safe(taxii_message.feed_name))
             data_feed = DataFeed.objects.get(name=taxii_message.feed_name)
         except:
             logger.debug('Attempting to subscribe to unknown data feed [%s]', make_safe(taxii_message.feed_name))
@@ -308,17 +308,17 @@ def feed_subscription_get_content(request, taxii_message):
 
         try:
             binding_id = taxii_message.delivery_parameters.inbox_protocol
-            logger.debug('Obteniendo el protocol binding [%s]', make_safe(binding_id))
+            logger.debug('Getting the binding protocol [%s]', make_safe(binding_id))
             protocol_binding = ProtocolBindingId.objects.get(binding_id=binding_id)
             message_binding = taxii_message.delivery_parameters.delivery_message_binding
-            logger.debug('Obteniendo el message binding [%s]', make_safe(message_binding))
+            logger.debug('Getting the binding message [%s]', make_safe(message_binding))
             message_binding = MessageBindingId.objects.get(binding_id=message_binding)
         except:
             logger.debug('Attempting to subscribe to use unknowon protocol or message bindings')
             m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_NOT_FOUND, message='Protocol or message bindings does not exist')
             return create_taxii_response(m, use_https=request.is_secure())
 
-        logger.debug("Voy a armar el mensaje de respuesta")
+        logger.debug("Response message")
         subscr_methods = DataFeedSubscriptionMethod()
         subscr_methods.title = taxii_message.delivery_parameters.inbox_address
         subscr_methods.description = taxii_message.delivery_parameters.inbox_address
@@ -329,10 +329,10 @@ def feed_subscription_get_content(request, taxii_message):
         subscr_methods.message_bindings.add(message_binding)
         subscr_methods.save()
 
-        logger.debug("Guarde la informacion correctamente")
+        logger.debug("The information was correclty saved")
 
         user = User.objects.get(id=1)
-        logger.debug("obtiene el usuario")
+        logger.debug("Get user")
         data_feed_subscription = DataFeedSubscription()
         data_feed_subscription.active = True
         data_feed_subscription.expires = timezone.now() + datetime.timedelta(days=500)
@@ -347,7 +347,7 @@ def feed_subscription_get_content(request, taxii_message):
                                 delivery_message_binding=taxii_message.delivery_parameters.delivery_message_binding,
                                 content_bindings=taxii_message.delivery_parameters.content_bindings)
 
-        logger.debug("retorno las instancias de poll service")
+        logger.debug("Return the Poll Service instances")
         poll_instances = []
         for poll_info in data_feed.poll_service_instances.all():
             poll_inst = tm.ManageFeedSubscriptionResponse.PollInstance(poll_protocol = poll_info.protocol_binding.binding_id,
@@ -368,9 +368,9 @@ def feed_subscription_get_content(request, taxii_message):
         subscr_instance.poll_instances = poll_instances
 
         subscription_instances.append(subscr_instance)
-        logger.debug("Termina y devuelvo la respuesta")
+        logger.debug("Returns the response")
         feed_subscription_response_message = tm.ManageFeedSubscriptionResponse(message_id = tm.generate_message_id(), in_response_to = taxii_message.message_id,
-                feed_name = taxii_message.feed_name, message='Subscription sucseed', subscription_instances = subscription_instances)
+                feed_name = taxii_message.feed_name, message='Subscription succeds', subscription_instances = subscription_instances)
 
         return create_taxii_response(feed_subscription_response_message, use_https=request.is_secure())
     else:
@@ -402,9 +402,6 @@ def poll_get_content(request, taxii_message):
         query_params['timestamp_label__lte'] = taxii_message.inclusive_end_timestamp_label
     else:
         query_params['timestamp_label__lte'] = current_datetime
-
- #   if taxii_message.content_bindings:
-  #         query_params['content_binding__in'] = taxii_message.content_bindings
 
     content_blocks = data_feed.content_blocks.filter(**query_params).order_by('timestamp_label')
     logger.debug('Returned [%d] content blocks from data feed [%s]', len(content_blocks), make_safe(data_feed.name))
