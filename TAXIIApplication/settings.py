@@ -29,10 +29,10 @@ DATABASES = {
     'default': {
         'ENGINE':   'django.db.backends.mysql',
         'NAME':     'taxii_db',
-        'USER': 'stix',
-        'PASSWORD': 'stix',
+        'USER': 'root',
+        'PASSWORD': 'root',
        # 'HOST': '192.168.2.17',  #'192.168.0.103',
-        'HOST': '192.168.0.108',
+        'HOST': '127.0.0.1',
         'PORT': '3306',
     }
 }

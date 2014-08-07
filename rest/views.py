@@ -18,7 +18,7 @@ import json
 from django.http import HttpResponse
 
 
-INBOX_SERVICES_URL= "http://192.168.0.103:8000/services/inbox"
+INBOX_SERVICES_URL= "http://172.16.59.219:8001/services/inbox/default/"
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -379,7 +379,11 @@ def subscripcion_data_feed(request):
                     action= f[0], subscription_id='1', delivery_parameters=delivery_parameters)
     feed_subscription_xml = feed_subscription.to_xml()
 
+    logger.debug('The message sent is: ' + feed_subscription_xml) 
+
     client = tc.HttpClient()
     resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_subscription_xml, port)
-    logger.debug("The server responds")
+
+    response_message = t.get_message_from_http_response(resp, '0')
+    logger.debug('The server respons: ' + response_message.to_xml())
     return Response(status = status.HTTP_200_OK)
