@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.contrib.auth.models import User
-from tasks import poll_request, envio_informacion
+from tasks import poll_request, envio_informacion as envio_info_task
 from urlparse import urlparse
 import libtaxii.messages as tm
 import libtaxii.clients as tc
@@ -298,12 +298,15 @@ def envio_informacion(request):
     #Given the id of a DataFeed Subscription we get the Data Feeds for that subscription.
     logger = logging.getLogger('TAXIIApplication.taxii.views.envio_informacion')
     logger.debug('Start the sending of information')
-    sub_service_id = request.DATA.get('id')
+    logger.debug(request.DATA)
+    sub_service_id = request.DATA.get('inbox_information')
+    logger.debug('El inbox al que voy a mandar es el de id: ' + str(sub_service_id))
 
     subscription_service = DataFeedSubscription.objects.get(id = sub_service_id)
 
-    urlParsed = urlparse(subscription_service.data_feed_subscription.address)
-    envio_informacion.delay(data_feed = subscription_service.data_feed.name, host = urlparse.hostname, path = urlParsed.path, port = urlParsed.port)
+    urlParsed = urlparse(subscription_service.data_feed_method.address)
+    envio_info_task.delay(data_feed = subscription_service.data_feed, host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)
+    return Response(status = status.HTTP_200_OK)
 
 @api_view(['POST'])
 def poll_informacion(request):

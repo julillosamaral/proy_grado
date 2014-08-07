@@ -77,13 +77,14 @@ def envio_informacion(data_feed, host, path, port):
     logger.debug('Host: ' + host)
     logger.debug('Path: ' + path)
     logger.debug('Port: ' + str(port))
-    logger.debug('Data Feed id and title:' + str(data_feed.id) + data_feed.title)
+    logger.debug('Data Feed name:' + data_feed.name)
 
     content_blocks = data_feed.content_blocks
 
     content = []
-    for content_block in content_blocks:
-        content.append(content_block.content)
+    for content_block in content_blocks.all():
+	cb = tm11.ContentBlock(tm11.ContentBinding(content_block.content_binding.binding_id), content_block.content)
+        content.append(cb)
 
     inbox_message = tm11.InboxMessage(message_id = tm11.generate_message_id(), content_blocks=content)
 
@@ -93,9 +94,9 @@ def envio_informacion(data_feed, host, path, port):
     client = tc.HttpClient()
     client.setProxy('noproxy')
 
-    resp = client.callTaxiiService2(hostname, path, t.VID_TAXII_XML_10, inbox_xml, port)
+    resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, inbox_xml, port)
     response_message = t.get_message_from_http_response(resp, '0')
-    logger.debug('THe response message was: ' + response_message)
+    logger.debug('The response message was: ' + response_message.to_xml())
     #Con la respuesta creo que no hago nada. Queda loggeada nomas
 
 @task()
@@ -114,7 +115,7 @@ def obtener_data_feeds(host, port, path):
     resp = client.callTaxiiService2(host, path, t.VID_TAXII_XML_10, feed_info_xml, port)
 
     response_message = t.get_message_from_http_response(resp, '0')
-    logger.debug('We get the following response: '+response_message)
+    logger.debug('We get the following response: '+response_message.to_xml())
 
 
 

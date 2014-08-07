@@ -309,10 +309,10 @@ def feed_subscription_get_content(request, taxii_message):
         try:
             binding_id = taxii_message.delivery_parameters.inbox_protocol
             logger.debug('Getting the binding protocol [%s]', make_safe(binding_id))
-            protocol_binding = ProtocolBindingId.objects.get(binding_id=binding_id)
+            protocol_binding = ProtocolBindingId.objects.get(title=binding_id)
             message_binding = taxii_message.delivery_parameters.delivery_message_binding
             logger.debug('Getting the binding message [%s]', make_safe(message_binding))
-            message_binding = MessageBindingId.objects.get(binding_id=message_binding)
+            message_binding = MessageBindingId.objects.get(title=message_binding)
         except:
             logger.debug('Attempting to subscribe to use unknowon protocol or message bindings')
             m = tm.StatusMessage(tm.generate_message_id(), taxii_message.message_id, status_type=tm.ST_NOT_FOUND, message='Protocol or message bindings does not exist')
@@ -339,7 +339,14 @@ def feed_subscription_get_content(request, taxii_message):
         data_feed_subscription.data_feed_method = subscr_methods
         data_feed_subscription.data_feed = data_feed
         data_feed_subscription.user = user
-        data_feed_subscription.subscription_id = DataFeedSubscription.objects.latest('id').id
+
+        subscription_list = DataFeedSubscription.objects.all()
+        if len(subscription_list) == 0:
+                id_value = 1
+        else:
+                id_value = DataFeedSubscription.objects.latest('id').id + 1
+
+        data_feed_subscription.subscription_id = id_value
         data_feed_subscription.save()
 
         delivery_parameters = tm.DeliveryParameters(inbox_protocol=taxii_message.delivery_parameters.inbox_protocol,
