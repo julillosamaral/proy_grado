@@ -16,6 +16,10 @@ import libtaxii.clients as tc
 import libtaxii as t
 import json
 from django.http import HttpResponse
+import cybox.bindings.cybox_core as cybox_core_binding
+from cybox.core import Observables
+from stix.core import STIXPackage, STIXHeader
+from lxml import etree
 
 
 INBOX_SERVICES_URL= "http://172.16.59.219:8001/services/inbox/default/"
@@ -206,7 +210,7 @@ def registrar_remote_data_feeds(request):
                 remote_df.description = "None"
             else:
                 remote_df.description = feed.feed_description
-
+            remote_df.producer = host
             remote_df.save()
             i = 0
             logger.debug('We get the subscription methods')
@@ -287,9 +291,27 @@ def alta_informacion(request):
         serializer = ContentBlockSerializer(content, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
-    	content_binding = ContentBindingId.objects.get(id=request.DATA.get('content_binding'))
-    	cb = ContentBlock(title=request.DATA.get('title'), description=request.DATA.get('description') ,content_binding=content_binding, content=request.DATA.get('content'))
+        cont = request.DATA.get('content')
+
+        c = StringIO.StringIO(cont)
+
+        logger.debug(request.DATA.get('content_binding'))
+
+	observables_obj = cybox_core_binding.parse(c)
+	observables = Observables.from_obj(observables_obj)
+
+        stix_package = STIXPackage()
+        stix_header = STIXHeader()
+
+        stix_header.description = request.DATA.get('description') 
+        stix_package.stix_header = stix_header
+        stix_package.add_observable(observables)
+
+    	content_binding = ContentBindingId.objects.get(id=1)
+    	cb = ContentBlock(title=request.DATA.get('title'), description=request.DATA.get('description') ,content_binding=content_binding, content=stix_package.to_xml())
     	cb.save()
+        df = DataFeed.objects.get(name='default')
+        df.content_blocks.add(cb)
 	return Response(status=status.HTTP_201_CREATED)
 
 
@@ -390,3 +412,21 @@ def subscripcion_data_feed(request):
     response_message = t.get_message_from_http_response(resp, '0')
     logger.debug('The server respons: ' + response_message.to_xml())
     return Response(status = status.HTTP_200_OK)
+
+@api_view(['GET'])
+def data_feed_content_block(request):
+    #Returns a list of content blocks with the data feeds that contains them
+    logger = logging.getLogger('TAXIIApplication.taxii.views.data_feed_content_block')
+    logger.debug('Starts to assambly the list of content blocks and data feeds')
+    data_feeds = DataFeed.objects.all()
+    
+    data = []
+    for df in data_feeds:
+        contents = df.content_blocks
+        for cont in contents.all():
+            data.append({"data_feed" : df.name, "title" : cont.title, "description" : cont.description, "content" : cont.content})
+
+    json_data = json.dumps({ "items" : data })
+    logger.debug("The JSON to return is:" + json_data)
+    return HttpResponse(json_data, content_type="application/json")
+

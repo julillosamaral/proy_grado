@@ -8,7 +8,8 @@ urlpatterns = patterns('',
     url(r'^poll_informacion/$', 'rest.views.poll_informacion' ),						#url to make a poll information
     url(r'^data_feed_subscriptions/$', 'rest.views.obtener_data_feed_subscriptions'), 	#url to make a subscription to a data feed
     url(r'^registrar_remote_data_feeds/$', 'rest.views.registrar_remote_data_feeds'),	#url to register to a remote data feed
-    url(r'^envio_informacion/$', 'rest.views.envio_informacion')
+    url(r'^envio_informacion/$', 'rest.views.envio_informacion'),
+    url(r'^data_feed_content_block/$', 'rest.views.data_feed_content_block')
 )
 
 urlpatterns = format_suffix_patterns(urlpatterns)

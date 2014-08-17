@@ -77,7 +77,7 @@ class RemoteDataFeedSerializer(serializers.HyperlinkedModelSerializer):
     subscription_methods = serializers.RelatedField(many=True)
     class Meta:
         model = RemoteDataFeed
-        fields = ('id', 'name', 'description', 'supported_content_bindings', 'push_methods', 'poll_service_instances', 'subscription_methods', 'content_blocks', 'date_created', 'date_updated')
+        fields = ('id', 'name', 'description', 'producer', 'supported_content_bindings', 'push_methods', 'poll_service_instances', 'subscription_methods', 'content_blocks', 'date_created', 'date_updated')
 
 class RemoteInboxSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
