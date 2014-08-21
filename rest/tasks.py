@@ -58,7 +58,7 @@ def poll_request(collection_name, subscription_id, host, path, port):
 
         for cb in content_blocks:
             p = ContentBlock()
-            p.description = 'Got from Inbox Service'
+            p.description = 'Got from Poll Service'
             p.message_id = taxii_message.message_id
            
             c = ContentBindingId(binding_id=cb.content_binding)

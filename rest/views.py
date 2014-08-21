@@ -18,7 +18,7 @@ import json
 from django.http import HttpResponse
 
 
-INBOX_SERVICES_URL= "http://192.168.0.103:8000/services/inbox"
+INBOX_SERVICES_URL= "http://172.16.59.218:8001/services/inbox/default/"
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -290,7 +290,9 @@ def alta_informacion(request):
     	content_binding = ContentBindingId.objects.get(id=request.DATA.get('content_binding'))
     	cb = ContentBlock(title=request.DATA.get('title'), description=request.DATA.get('description') ,content_binding=content_binding, content=request.DATA.get('content'))
     	cb.save()
-	return Response(status=status.HTTP_201_CREATED)
+        df = DataFeed.objects.get(name='default')
+	df.content_blocks.add(cb)
+        return Response(status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])
