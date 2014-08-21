@@ -277,7 +277,8 @@ class RemoteDataFeed(models.Model):
     description = models.TextField(blank=True)
     supported_content_bindings = models.ManyToManyField(ContentBindingId)
     push_methods = models.ManyToManyField(DataFeedPushMethod)
-    
+    producer = models.CharField(max_length=MAX_TITLE_LEN, null=True)    
+
     poll_service_instances = models.ManyToManyField(RemoteDataFeedPollInformation, null=True)
     subscription_methods = models.ManyToManyField(DataFeedSubscriptionMethod, blank=True, null=True)
     content_blocks = models.ManyToManyField(ContentBlock, blank=True, null=True)

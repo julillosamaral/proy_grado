@@ -190,17 +190,17 @@ def inbox_add_content(request, inbox_name, taxii_message):
     logger.debug('TAXII message [%s] contains [%d] content blocks', make_safe(taxii_message.message_id), len(taxii_message.content_blocks))
     for content_block in taxii_message.content_blocks:
         try:
-            content_binding_id = ContentBindingId.objects.get(binding_id=content_block.content_binding)
+            content_binding_id = ContentBindingId.objects.filter(binding_id=content_block.content_binding)
         except:
             logger.debug('TAXII message [%s] contained unrecognized content binding [%s]', make_safe(taxii_message.message_id), make_safe(content_block.content_binding))
             continue # cannot proceed - move on to the next content block
 
-        if content_binding_id not in inbox.supported_content_bindings.all():
+        if content_binding_id[0] not in inbox.supported_content_bindings.all():
             logger.debug('Inbox [%s] does not accept content with binding id [%s]', make_safe(inbox_name), make_safe(content_block.content_binding))
         else:
             c = ContentBlock()
             c.message_id = taxii_message.message_id
-            c.content_binding = content_binding_id
+            c.content_binding = content_binding_id[0]
             c.content = content_block.content
 
             if content_block.padding:
@@ -213,7 +213,7 @@ def inbox_add_content(request, inbox_name, taxii_message):
             inbox.content_blocks.add(c) # add content block to inbox
 
             for data_feed in inbox.data_feeds.all():
-                if content_binding_id in data_feed.supported_content_bindings.all():
+                if content_binding_id[0] in data_feed.supported_content_bindings.all():
                     data_feed.content_blocks.add(c)
                     data_feed.save()
                 else:
