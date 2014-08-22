@@ -60,6 +60,7 @@ def poll_request(collection_name, subscription_id, host, path, port):
             p = ContentBlock()
             p.description = 'Got from Poll Service'
             p.message_id = taxii_message.message_id
+            p.title = 'From '
            
             c = ContentBindingId(binding_id=cb.content_binding)
             c.save()
