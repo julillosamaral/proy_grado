@@ -1,4 +1,3 @@
-from celery.decorators import task
 import sys
 import libtaxii as t
 import libtaxii.messages_11 as tm11
@@ -8,7 +7,6 @@ import logging
 from taxii.models import DataFeedSubscriptionMethod, ContentBlock, ContentBindingId
 from urlparse import urlparse
 
-@task()
 def poll_request(collection_name, subscription_id, host, path, port):
     #Given the collection name, subscription id, host, path and port we make a poll request to 
     #the client TAXII associated with the host, path and port for the subscription and collection given.
@@ -60,8 +58,8 @@ def poll_request(collection_name, subscription_id, host, path, port):
             p = ContentBlock()
             p.description = 'Got from Poll Service'
             p.message_id = taxii_message.message_id
-            p.title = 'From '
-           
+            p.title = 'PServ ' + str(host) + collection_name
+
             c = ContentBindingId(binding_id=cb.content_binding)
             c.save()
             p.content_binding = c
@@ -69,7 +67,6 @@ def poll_request(collection_name, subscription_id, host, path, port):
             p.save()
 
 
-@task()
 def envio_informacion(data_feed, host, path, port):
     #Given the host, port and path of a TAXII client we sent the data_feed to that client.
     logger = logging.getLogger('TAXIIApplication.rest.tasks.envio_informacion')
@@ -100,7 +97,6 @@ def envio_informacion(data_feed, host, path, port):
     logger.debug('The response message was: ' + response_message.to_xml())
     #Con la respuesta creo que no hago nada. Queda loggeada nomas
 
-@task()
 def obtener_data_feeds(host, port, path):
     #Given the host, port and path of a TAXII client we get the data feeds of that client
     logger = logging.getLogger('TAXIIApplication.rest.tasks.obtener_data_feeds')

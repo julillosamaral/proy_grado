@@ -118,7 +118,7 @@ INSTALLED_APPS = (
     'taxii',
     'rest_framework',
     'rest',
-    'djcelery',
+    #'djcelery',
     'kombu.transport.django',
 )
 
