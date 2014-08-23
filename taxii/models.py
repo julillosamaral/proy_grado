@@ -317,8 +317,8 @@ class TAXIIServices(models.Model):
     """Represents all TAXII Services available """
     name = models.CharField(max_length=MAX_TITLE_LEN, unique=True)
     description = models.TextField(blank=True)
-    inbox = models.URLField()
-    poll = models.URLField()
-    feed_managment = models.URLField()
-    subscription = models.URLField()
+    inbox = models.URLField(blank=True)
+    poll = models.URLField(blank=True)
+    feed_managment = models.URLField(blank=True)
+    subscription = models.URLField(blank=True)
 

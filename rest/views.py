@@ -22,7 +22,7 @@ from stix.core import STIXPackage, STIXHeader
 from lxml import etree
 
 
-INBOX_SERVICES_URL= "http://172.16.59.219:8001/services/inbox/default/"
+INBOX_SERVICES_URL= "http://172.16.59.218:8001/services/inbox/default/"
 
 class UserViewSet(viewsets.ModelViewSet):
     #Gets, lists, creates or updates users.
@@ -328,7 +328,7 @@ def envio_informacion(request):
     subscription_service = DataFeedSubscription.objects.get(id = sub_service_id)
 
     urlParsed = urlparse(subscription_service.data_feed_method.address)
-    envio_info_task.delay(data_feed = subscription_service.data_feed, host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)
+    envio_info_task(data_feed = subscription_service.data_feed, host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)
     return Response(status = status.HTTP_200_OK)
 
 @api_view(['POST'])
@@ -349,7 +349,7 @@ def poll_informacion(request):
         urlParsed = urlparse(dfpi.address)
 
         logger.debug('The conection data are: ' + urlParsed.hostname + ' ' + str(urlParsed.port) + ' ' + urlParsed.path)
-        poll_request.delay(collection_name = data_feed.name, subscription_id = '1', host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)
+        poll_request(collection_name = data_feed.name, subscription_id = '1', host = urlParsed.hostname, path = urlParsed.path, port = urlParsed.port)
 
     return Response(status = status.HTTP_200_OK)
 
@@ -419,13 +419,23 @@ def data_feed_content_block(request):
     #Returns a list of content blocks with the data feeds that contains them
     logger = logging.getLogger('TAXIIApplication.taxii.views.data_feed_content_block')
     logger.debug('Starts to assambly the list of content blocks and data feeds')
-    data_feeds = DataFeed.objects.all()
+    content_blocks = ContentBlock.objects.all()
     
     data = []
-    for df in data_feeds:
-        contents = df.content_blocks
-        for cont in contents.all():
-            data.append({"data_feed" : df.name, "title" : cont.title, "description" : cont.description, "content" : cont.content})
+    for cb in content_blocks:
+        data_feeds = DataFeed.objects.all()
+        end = False
+        df_name = ''
+        for df in data_feeds:
+            for c in df.content_blocks.all():
+                if c.id == cb.id:
+                    df_name = df.name
+                    end = True
+                    break
+            if end:
+                break
+
+        data.append({"data_feed" : df_name, "title" : cb.title, "description" : cb.description, "content" : cb.content})
 
     json_data = json.dumps({ "items" : data })
     logger.debug("The JSON to return is:" + json_data)
