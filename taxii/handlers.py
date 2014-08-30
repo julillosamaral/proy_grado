@@ -199,10 +199,16 @@ def inbox_add_content(request, inbox_name, taxii_message):
             logger.debug('Inbox [%s] does not accept content with binding id [%s]', make_safe(inbox_name), make_safe(content_block.content_binding))
         else:
             c = ContentBlock()
+
+            stix_package = STIXPackage()
+            stix_package.from_xml(xml_file=cb.content)
+
+            c.description = stix_package.stix_header.description
+            c.title = stix_package.stix_header.title
+            
             c.message_id = taxii_message.message_id
             c.content_binding = content_binding_id[0]
             c.content = content_block.content
-
             if content_block.padding:
                 c.padding = content_block.padding
 

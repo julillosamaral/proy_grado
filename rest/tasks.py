@@ -6,6 +6,8 @@ import libtaxii.clients as tc
 import logging
 from taxii.models import DataFeedSubscriptionMethod, ContentBlock, ContentBindingId
 from urlparse import urlparse
+from stix.core import STIXPackage, STIXHeader
+
 
 def poll_request(collection_name, subscription_id, host, path, port):
     #Given the collection name, subscription id, host, path and port we make a poll request to 
@@ -51,14 +53,19 @@ def poll_request(collection_name, subscription_id, host, path, port):
     if taxii_message.message_type != tm.MSG_POLL_RESPONSE:
         logger.debug('The message is not a TAXII response')
     else:
+        logger.debug(taxii_message)
         content_blocks = taxii_message.content_blocks
         logger.debug('We process the Content Blocks')
 
         for cb in content_blocks:
             p = ContentBlock()
-            p.description = 'Got from Poll Service'
+
+            stix_package = STIXPackage()
+            stix_package.from_xml(xml_file=cb.content)
+
+            p.description = stix_package.stix_header.description
+            p.title = stix_package.stix_header.title
             p.message_id = taxii_message.message_id
-            p.title = 'PServ ' + str(host) + collection_name
 
             c = ContentBindingId(binding_id=cb.content_binding)
             c.save()

@@ -22,7 +22,7 @@ from stix.core import STIXPackage, STIXHeader
 from lxml import etree
 
 
-INBOX_SERVICES_URL= "http://172.16.59.218:8001/services/inbox/default/"
+INBOX_SERVICES_URL= "http://172.16.59.219:8001/services/inbox/default/"
 
 class UserViewSet(viewsets.ModelViewSet):
     #Gets, lists, creates or updates users.
@@ -299,10 +299,13 @@ def alta_informacion(request):
 	observables_obj = cybox_core_binding.parse(c)
 	observables = Observables.from_obj(observables_obj)
 
+        logger.debug(str(observables))
+
         stix_package = STIXPackage()
         stix_header = STIXHeader()
 
-        stix_header.description = request.DATA.get('description') 
+        stix_header.description = request.DATA.get('description')
+        stix_header.title = request.DATA.get('title') 
         stix_package.stix_header = stix_header
         stix_package.add_observable(observables)
 
