@@ -7,7 +7,10 @@ import logging
 from taxii.models import DataFeedSubscriptionMethod, ContentBlock, ContentBindingId
 from urlparse import urlparse
 from stix.core import STIXPackage, STIXHeader
+from StringIO import StringIO
+from lxml import etree
 
+ORGANIZATION_NAME         = 'CSIRT 1'
 
 def poll_request(collection_name, subscription_id, host, path, port):
     #Given the collection name, subscription id, host, path and port we make a poll request to 
@@ -58,20 +61,31 @@ def poll_request(collection_name, subscription_id, host, path, port):
         logger.debug('We process the Content Blocks')
 
         for cb in content_blocks:
-            p = ContentBlock()
 
-            stix_package = STIXPackage()
-            stix_package.from_xml(xml_file=cb.content)
+            tree = etree.parse(StringIO(cb.content))
+            import stix.bindings.stix_core as stix_core_binding
+            stix_package_obj = stix_core_binding.STIXType().factory()
+            stix_package_obj.build(tree.getroot())
 
-            p.description = stix_package.stix_header.description
-            p.title = stix_package.stix_header.title
-            p.message_id = taxii_message.message_id
+            from stix.core import STIXPackage # resolve circular dependencies
+            stix_package = STIXPackage().from_obj(stix_package_obj)
 
-            c = ContentBindingId(binding_id=cb.content_binding)
-            c.save()
-            p.content_binding = c
-            p.content = cb.content
-            p.save()
+            logger.debug(stix_package.stix_header.description)
+            logger.debug('El id del stix es ' + str(stix_package._id))
+            
+            info = ContentBlock.objects.filter(stix_id = stix_package._id)
+            if info.exists():
+                p = ContentBlock()
+
+                p.description = stix_package.stix_header.description
+                p.title = stix_package.stix_header.title
+                p.message_id = taxii_message.message_id
+                p.origen = collection_name + ' in ' + host             
+                c = ContentBindingId(binding_id=cb.content_binding)
+                c.save()
+                p.content_binding = c
+                p.content = cb.content
+                p.save()
 
 
 def envio_informacion(data_feed, host, path, port):
@@ -91,7 +105,8 @@ def envio_informacion(data_feed, host, path, port):
 	cb = tm11.ContentBlock(tm11.ContentBinding(content_block.content_binding.binding_id), content_block.content)
         content.append(cb)
 
-    inbox_message = tm11.InboxMessage(message_id = tm11.generate_message_id(), content_blocks=content)
+    subInfo = tm11.InboxMessage.SubscriptionInformation(collection_name = data_feed.title + ' ' + ORGANIZATION_NAME, subscription_id = 1)
+    inbox_message = tm11.InboxMessage(message_id = tm11.generate_message_id(), content_blocks=content, subscription_information = subInfo)
 
     inbox_xml = inbox_message.to_xml()
     logger.debug('The message to be sent is: '+ inbox_xml)

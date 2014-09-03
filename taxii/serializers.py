@@ -45,7 +45,7 @@ class DataFeedSubscriptionMethodSerializer(serializers.HyperlinkedModelSerialize
 class ContentBlockSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ContentBlock
-        fields = ('id', 'title', 'description', 'timestamp_label', 'submitted_by', 'message_id', 'content_binding', 'content', 'padding', 'date_created', 'date_updated')
+        fields = ('id', 'title', 'description', 'timestamp_label', 'submitted_by', 'message_id', 'content_binding', 'content', 'padding', 'date_created', 'date_updated', 'stix_id', 'origen')
 
 class DataFeedSerializer(serializers.HyperlinkedModelSerializer):
     subscription_methods = serializers.RelatedField(many=True)

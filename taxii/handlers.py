@@ -188,6 +188,9 @@ def inbox_add_content(request, inbox_name, taxii_message):
         return create_taxii_response(m, use_https=request.is_secure())
 
     logger.debug('TAXII message [%s] contains [%d] content blocks', make_safe(taxii_message.message_id), len(taxii_message.content_blocks))
+
+    datafeed = taxii_message.subscription_information.collection_name
+    
     for content_block in taxii_message.content_blocks:
         try:
             content_binding_id = ContentBindingId.objects.filter(binding_id=content_block.content_binding)
@@ -198,32 +201,39 @@ def inbox_add_content(request, inbox_name, taxii_message):
         if content_binding_id[0] not in inbox.supported_content_bindings.all():
             logger.debug('Inbox [%s] does not accept content with binding id [%s]', make_safe(inbox_name), make_safe(content_block.content_binding))
         else:
-            c = ContentBlock()
 
-            stix_package = STIXPackage()
-            stix_package.from_xml(xml_file=cb.content)
+            tree = etree.parse(c.content)
 
-            c.description = stix_package.stix_header.description
-            c.title = stix_package.stix_header.title
+            import stix.bindings.stix_core as stix_core_binding
+            stix_package_obj = stix_core_binding.STIXType().factory()
+            stix_package_obj.build(tree.getroot())
+
+            from stix.core import STIXPackage # resolve circular dependencies
+            stix_package = STIXPackage().from_obj(stix_package_obj)
             
-            c.message_id = taxii_message.message_id
-            c.content_binding = content_binding_id[0]
-            c.content = content_block.content
-            if content_block.padding:
-                c.padding = content_block.padding
+            info = ContentBlock.objects.filter(stix_id = stix_package._id)
+            if info.exists():
 
-            if request.user.is_authenticated():
-                c.submitted_by = request.user
+                c = ContentBlock()
+                c.origen = datafeed
+                c.message_id = taxii_message.message_id
+                c.content_binding = content_binding_id[0]
+                c.content = content_block.content
+                if content_block.padding:
+                    c.padding = content_block.padding
 
-            c.save()
-            inbox.content_blocks.add(c) # add content block to inbox
+                if request.user.is_authenticated():
+                    c.submitted_by = request.user
 
-            for data_feed in inbox.data_feeds.all():
-                if content_binding_id[0] in data_feed.supported_content_bindings.all():
-                    data_feed.content_blocks.add(c)
-                    data_feed.save()
-                else:
-                    logger.debug('Inbox [%s] received data using content binding [%s] - '
+                c.save()
+                inbox.content_blocks.add(c) # add content block to inbox
+
+                for data_feed in inbox.data_feeds.all():
+                    if content_binding_id[0] in data_feed.supported_content_bindings.all():
+                        data_feed.content_blocks.add(c)
+                        data_feed.save()
+                    else:
+                        logger.debug('Inbox [%s] received data using content binding [%s] - '
                                  'associated data feed [%s] does not support this binding.',
                                  make_safe(inbox_name), make_safe(content_block.content_binding), make_safe(data_feed.name))
 
